@@ -1,0 +1,68 @@
+/* frontend/src/app/globals.css */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import fonts */
+@import '@fontsource/poppins';
+@import '@fontsource/merriweather';
+@import 'vazir-font/dist/font-face.css'; /* Import Vazir Farsi font */
+/* Import Inter from Google Fonts. 
+   You could also import in the <head> with a <link>, but let's do it here for convenience. */
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  @import 'vazir-font/dist/font-face.css'; /* Keep if you still want Vazir Farsi support */
+
+/* Body and html styling */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-background text-foreground font-sans;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif; /* Force body to Inter */
+}
+
+/* For Farsi content, selectively apply .font-farsi if needed */
+.font-farsi {
+  font-family: 'Vazir', sans-serif;
+}
+
+.font-english {
+  font-family: 'Poppins', sans-serif;
+}
+/* Minimal resets for images */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Utility classes for button states, focus rings, etc. */
+button:focus {
+  @apply outline-none ring-2 ring-offset-2 ring-accent;
+}
+
+:root {
+  --background: #FFFFFF;
+  --foreground: #000000;
+  --primary: #008080; /* Parrot-inspired teal */
+  --secondary: #FFD700; /* Gold */
+  --accent: #FF4500;   /* Orange-red */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #1F2937;
+    --foreground: #F9FAFB;
+  }
+}
+
+a {
+  @apply text-secondary hover:text-accent;
+}
+
+button {
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent;
+}

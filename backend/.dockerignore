@@ -1,0 +1,27 @@
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# Git repository
+.git/
+.gitignore
+
+
+
+# Database migrations (if managed separately)
+migrations/
+
+# Other unnecessary files
+*.md
+*.txt
+*.log
+
+# Include necessary files
+!requirements.txt
+!Dockerfile

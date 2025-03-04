@@ -1,0 +1,21 @@
+# Node modules
+node_modules/
+
+# Build output
+.next/
+out/
+
+# Git repository
+.git/
+.gitignore
+
+
+# Environment variables
+.env.local
+.env.development.local
+.env.production.local
+
+# Other unnecessary files
+*.md
+*.txt
+*.log
