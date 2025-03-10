@@ -22,8 +22,9 @@ def format_time(seconds):
     return f"{hours:02}:{minutes:02}:{seconds_int:02},{milliseconds:03}"
 
 def generate_srt(transcription):
-    """Generate SRT format from ElevenLabs transcription JSON."""
-    words = transcription['words']
+    """Generate SRT format from ElevenLabs transcription object."""
+    # Access the words attribute using dot notation
+    words = transcription.words
     srt_content = ""
     index = 1
     current_speaker = None
@@ -31,33 +32,35 @@ def generate_srt(transcription):
     end_time = None
     text = ""
     for word in words:
-        if word['type'] == 'word':
-            speaker = word.get('speaker_id', 'unknown')
+        # If word is a Pydantic model or similar, access properties with dot notation
+        if word.type == 'word':
+            speaker = word.speaker_id if hasattr(word, 'speaker_id') else 'unknown'
             if speaker != current_speaker or text.strip() == "":
                 if current_speaker is not None and text.strip() != "":
                     srt_content += f"{index}\n{format_time(start_time)} --> {format_time(end_time)}\n{text.strip()}\n\n"
                     index += 1
                 current_speaker = speaker
-                start_time = word['start']
-                end_time = word['end']
-                text = word['text'] + " "
+                start_time = word.start
+                end_time = word.end
+                text = word.text + " "
             else:
-                end_time = word['end']
-                text += word['text'] + " "
-        elif word['type'] == 'spacing':
+                end_time = word.end
+                text += word.text + " "
+        elif word.type == 'spacing':
             text += " "
     if current_speaker is not None and text.strip() != "":
         srt_content += f"{index}\n{format_time(start_time)} --> {format_time(end_time)}\n{text.strip()}\n\n"
     return srt_content
 
 def convert_transcription_to_format(transcription, output_format):
-    """Convert ElevenLabs transcription to user-specified format."""
+    """Convert ElevenLabs transcription to the specified output format."""
     if output_format == 'txt':
-        return transcription['text']
+        return transcription.text
     elif output_format == 'srt':
         return generate_srt(transcription)
     elif output_format == 'json':
-        return json.dumps(transcription)
+        # Assuming transcription is a Pydantic model, use its built-in json method
+        return transcription.json()
     else:
         raise ValueError(f"Unsupported output format: {output_format}")
 
