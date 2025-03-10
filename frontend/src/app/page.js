@@ -48,7 +48,7 @@ export default function Home() {
                         "@context": "https://schema.org",
                         "@type": "WebSite",
                         name: "Tutty",
-                        url: "https://tutty.ir/",
+                        url: "https://tootty.com/",
                         description:
                             "Transcribe and convert media files (audio, video) automatically.",
                     }),

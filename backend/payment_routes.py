@@ -28,7 +28,7 @@ else:
     ZARINPAL_START_PAY_URL = "https://www.zarinpal.com/pg/StartPay/{authority}"
 
 # IMPORTANT: Update your callback so it hits the backend via "/api"
-CALLBACK_URL = "https://tutty.ir/api/payment/verify"
+CALLBACK_URL = "https://tootty.com/api/payment/verify"
 
 class PurchaseTimeRequest(BaseModel):
     hours: float

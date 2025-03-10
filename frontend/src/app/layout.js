@@ -7,16 +7,16 @@ import Script from 'next/script';
 import { GA_TRACKING_ID } from '../lib/gtag'; // Google Analytics tracking ID
 
 export const metadata = {
-  metadataBase: new URL('https://tutty.ir'),
-  title: 'Tutty - Speak to Text by AI',
+  metadataBase: new URL('https://tootty.com'),
+  title: 'Tootty - Speak to Text by AI',
   description: 'Transcribe and convert your media files (audio, video) to text or subtitles seamlessly with Tutty. Supports multiple languages including Persian, English, French, and more.',
   keywords: ['تبدیل صوت به متن','زیرنویس اتوماتیک','پیاده سازی','transcription', 'subtitle generation', 'media transcription', 'audio to text', 'farsi subtitle', 'speech recognition', 'Tutty', 'automatic transcription'],
   icons: '/favicon.ico',
   openGraph: {
-    title: 'Tutty - Advanced Transcription and Subtitle Generation',
+    title: 'TooTTy - Advanced Transcription and Subtitle Generation',
     description: 'Automatically transcribe and generate subtitles from your media files. Fast, accurate, and multi-lingual.',
-    url: 'https://tutty.ir',
-    siteName: 'Tutty',
+    url: 'https://tootty.com',
+    siteName: 'Tootty',
     images: [
       {
         url: '/images/og-image.jpg',
@@ -30,12 +30,12 @@ export const metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Tutty - Transcription Service',
+    title: 'Tootty - Transcription Service',
     description: 'Transcribe your media files easily with Tutty.',
     images: ['/images/og-image.jpg'],
   },
   alternates: {
-    canonical: 'https://tutty.ir/',
+    canonical: 'https://tootty.com/',
   },
   robots: {
     index: true,
@@ -51,7 +51,7 @@ export default async function RootLayout({ children }) {
   return (
     <html lang={locale === 'fa' ? 'fa' : 'en'} dir={locale === 'fa' ? 'rtl' : 'ltr'}>
       <head>
-        <meta name="author" content="Tutty Team" />
+        <meta name="author" content="Tootty Team" />
         <meta name="robots" content="index,follow" />
         <Script src="https://accounts.google.com/gsi/client" strategy="beforeInteractive" />
         {/* Google Analytics Script */}
