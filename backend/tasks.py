@@ -21,35 +21,61 @@ def format_time(seconds):
     milliseconds = int((seconds - int(seconds)) * 1000)
     return f"{hours:02}:{minutes:02}:{seconds_int:02},{milliseconds:03}"
 
+def ends_with_punctuation(word_text):
+    """Check if a word ends with punctuation indicating a sentence boundary."""
+    return word_text.strip().endswith(('.', '!', '?'))
+
 def generate_srt(transcription):
-    """Generate SRT format from ElevenLabs transcription object."""
-    # Access the words attribute using dot notation
+    """Generate SRT format from ElevenLabs transcription object with proper subtitle splitting."""
     words = transcription.words
     srt_content = ""
     index = 1
-    current_speaker = None
-    start_time = None
-    end_time = None
+    max_duration = 7.0    # Maximum duration per SRT entry in seconds
+    min_duration = 1.0    # Minimum duration to avoid very short entries
+    max_words = 15        # Maximum number of words per entry
+    max_gap = 0.5         # Maximum gap between words to start a new entry in seconds
+
+    current_start = None
+    current_end = None
     text = ""
-    for word in words:
-        # If word is a Pydantic model or similar, access properties with dot notation
+    word_count = 0
+
+    for i, word in enumerate(words):
         if word.type == 'word':
-            speaker = word.speaker_id if hasattr(word, 'speaker_id') else 'unknown'
-            if speaker != current_speaker or text.strip() == "":
-                if current_speaker is not None and text.strip() != "":
-                    srt_content += f"{index}\n{format_time(start_time)} --> {format_time(end_time)}\n{text.strip()}\n\n"
+            # Initialize start time if this is the first word of a new entry
+            if current_start is None:
+                current_start = word.start
+            current_end = word.end
+            text += word.text + " "
+            word_count += 1
+
+            # Calculate current duration
+            duration = current_end - current_start
+            is_punctuation = ends_with_punctuation(word.text)
+
+            # Conditions to end the current SRT entry
+            if (duration >= max_duration or
+                word_count >= max_words or
+                (is_punctuation and duration >= min_duration)):
+                srt_content += f"{index}\n{format_time(current_start)} --> {format_time(current_end)}\n{text.strip()}\n\n"
+                index += 1
+                current_start = None
+                text = ""
+                word_count = 0
+            # Check for significant gaps between words
+            elif i < len(words) - 1 and words[i + 1].type == 'word':
+                gap = words[i + 1].start - word.end
+                if gap > max_gap:
+                    srt_content += f"{index}\n{format_time(current_start)} --> {format_time(current_end)}\n{text.strip()}\n\n"
                     index += 1
-                current_speaker = speaker
-                start_time = word.start
-                end_time = word.end
-                text = word.text + " "
-            else:
-                end_time = word.end
-                text += word.text + " "
-        elif word.type == 'spacing':
-            text += " "
-    if current_speaker is not None and text.strip() != "":
-        srt_content += f"{index}\n{format_time(start_time)} --> {format_time(end_time)}\n{text.strip()}\n\n"
+                    current_start = None
+                    text = ""
+                    word_count = 0
+
+    # Append any remaining text as the final SRT entry
+    if current_start is not None and text.strip():
+        srt_content += f"{index}\n{format_time(current_start)} --> {format_time(current_end)}\n{text.strip()}\n\n"
+
     return srt_content
 
 def convert_transcription_to_format(transcription, output_format):
@@ -59,7 +85,6 @@ def convert_transcription_to_format(transcription, output_format):
     elif output_format == 'srt':
         return generate_srt(transcription)
     elif output_format == 'json':
-        # Assuming transcription is a Pydantic model, use its built-in json method
         return transcription.json()
     else:
         raise ValueError(f"Unsupported output format: {output_format}")
