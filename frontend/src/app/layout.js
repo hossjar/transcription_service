@@ -8,7 +8,7 @@ import { GA_TRACKING_ID } from '../lib/gtag'; // Google Analytics tracking ID
 
 export const metadata = {
   metadataBase: new URL('https://tootty.com'),
-  title: 'Tootty - Speak to Text by AI',
+  title: '19121388 ',
   description: 'Transcribe and convert your media files (audio, video) to text or subtitles seamlessly with Tutty. Supports multiple languages including Persian, English, French, and more.',
   keywords: ['تبدیل صوت به متن','زیرنویس اتوماتیک','پیاده سازی','transcription', 'subtitle generation', 'media transcription', 'audio to text', 'farsi subtitle', 'speech recognition', 'Tutty', 'automatic transcription'],
   icons: '/favicon.ico',

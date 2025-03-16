@@ -73,5 +73,7 @@
     "basic_plan_hours": "1 تا 4 ساعت",
     "standard_plan_hours": "5 تا 20 ساعت",
     "premium_plan_hours": "21 ساعت به بالا",
-    "insufficient_transcription_time": "کمبود اعتبار، زمان بیشتر بخرید"
+    "insufficient_transcription_time": "کمبود اعتبار، زمان بیشتر بخرید",
+    "tag_audio_events": "شناسایی رویدادها",
+    "diarize": "تشخیص گوینده"
     }

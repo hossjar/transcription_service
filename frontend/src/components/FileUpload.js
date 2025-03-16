@@ -12,11 +12,8 @@ export default function FileUpload({ onUploadComplete }) {
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
     const [outputFormat, setOutputFormat] = useState('txt');
     const [language, setLanguage] = useState('fa');
-
-    // --------------------------------------------------------------------------
-    // NEW: Add a "diarization" state to let the user select "none", "speaker", or "channel".
-    // --------------------------------------------------------------------------
-    const [diarization, setDiarization] = useState('none');
+    const [tagAudioEvents, setTagAudioEvents] = useState(false);
+    const [diarize, setDiarize] = useState(false);
 
     const { t } = useContext(LanguageContext);
 
@@ -29,7 +26,7 @@ export default function FileUpload({ onUploadComplete }) {
         e.preventDefault();
 
         if (!file) {
-            setMessage(t('please_select_a_file') || 'Please select a file'); // Ensure this key exists in localization files
+            setMessage(t('please_select_a_file') || 'Please select a file');
             return;
         }
 
@@ -40,11 +37,8 @@ export default function FileUpload({ onUploadComplete }) {
         formData.append('file', file);
         formData.append('output_format', outputFormat);
         formData.append('language', language);
-
-        // ----------------------------------------------------------------------
-        // NEW: Pass the diarization choice from the user to the backend.
-        // ----------------------------------------------------------------------
-        formData.append('diarization', diarization);
+        formData.append('tag_audio_events', tagAudioEvents.toString());
+        formData.append('diarize', diarize.toString());
 
         try {
             const res = await fetch(`${API_URL}/upload`, {
@@ -62,7 +56,6 @@ export default function FileUpload({ onUploadComplete }) {
             } else {
                 const data = await res.json();
                 if (data.detail === 'Insufficient transcription time. Please buy more time.') {
-                    // Set message as a localized link to /purchase
                     setMessage(
                         <Link href="/purchase" className="text-primary underline">
                             {t('insufficient_transcription_time')}
@@ -154,22 +147,26 @@ export default function FileUpload({ onUploadComplete }) {
                     </select>
                 </label>
 
-                {/*
-                    NEW: Diarization Dropdown 
-                    "none" (default), "speaker", "channel"
-                */}
-                <label className="flex flex-col text-foreground">
-                    {t('diarization') || 'Diarization'}
-                    <select
-                        value={diarization}
-                        onChange={(e) => setDiarization(e.target.value)}
-                        className="border p-2 rounded-md mt-1"
-                    >
-                        <option value="none">{t('no_diarization') || 'None'}</option>
-                        <option value="speaker">{t('speaker_diarization') || 'Speaker'}</option>
-                        <option value="channel">{t('channel_diarization') || 'Channel'}</option>
-                    </select>
-                </label>
+                <div className="flex flex-col space-y-2">
+                    <label className="flex items-center space-x-2">
+                        <input
+                            type="checkbox"
+                            checked={tagAudioEvents}
+                            onChange={(e) => setTagAudioEvents(e.target.checked)}
+                            className="form-checkbox h-5 w-5 text-primary"
+                        />
+                        <span>{t('tag_audio_events') || 'Tag Audio Events'}</span>
+                    </label>
+                    <label className="flex items-center space-x-2">
+                        <input
+                            type="checkbox"
+                            checked={diarize}
+                            onChange={(e) => setDiarize(e.target.checked)}
+                            className="form-checkbox h-5 w-5 text-primary"
+                        />
+                        <span>{t('diarize') || 'Diarize (Speaker Identification)'}</span>
+                    </label>
+                </div>
 
                 <button
                     type="submit"

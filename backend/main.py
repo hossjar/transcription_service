@@ -186,7 +186,8 @@ async def upload_file(
     file: UploadFile = File(...),
     output_format: str = Form('txt'),
     language: str = Form('fa'),
-    diarization: str = Form('none'),
+    tag_audio_events: bool = Form(False),
+    diarize: bool = Form(False),
     db: Session = Depends(get_db)
 ):
     """Handle file upload and initiate transcription."""
@@ -226,14 +227,14 @@ async def upload_file(
         db.commit()
         db.refresh(uploaded_file)
         logger.info(f"User {user.email} uploaded file {file.filename} (id={uploaded_file.id}) for transcription.")
-        tasks.transcribe_file.delay(uploaded_file.id, output_format, language, diarization)
+        tasks.transcribe_file.delay(uploaded_file.id, output_format, language, tag_audio_events, diarize)
         return JSONResponse(status_code=200, content={"detail": "File uploaded successfully", "file_id": uploaded_file.id})
     except Exception as e:
         logger.exception(f"Upload error: {e}")
         if 'file_location' in locals() and os.path.exists(file_location):
             os.remove(file_location)
         raise HTTPException(status_code=500, detail=str(e))
-
+    
 @app.get("/files")
 async def get_user_files(request: Request, db: Session = Depends(get_db), limit: int = Query(10, ge=1, le=100), offset: int = Query(0, ge=0)):
     """List user's uploaded files."""

@@ -97,7 +97,7 @@ def convert_transcription_to_format(transcription, output_format):
     retry_jitter=True,
     task_time_limit=7200  # 2 hours max runtime
 )
-def transcribe_file(self, file_id: int, output_format: str, language: str, diarization: str):
+def transcribe_file(self, file_id: int, output_format: str, language: str, tag_audio_events: bool, diarize: bool):
     """Transcribe file using ElevenLabs scribe_v1 model."""
     start_time = time.time()
     db = SessionLocal()
@@ -110,7 +110,7 @@ def transcribe_file(self, file_id: int, output_format: str, language: str, diari
         user = db.query(models.User).filter(models.User.id == user_id).first()
         user_email = user.email if user else "unknown"
         redis_channel = f"user_{user_id}_updates"
-        logger.info(f"[transcribe_file] Starting transcription. file_id={file_id}, user_id={user_id}, user_email={user_email}, output_format={output_format}, language={language}, diarization={diarization}")
+        logger.info(f"[transcribe_file] Starting transcription. file_id={file_id}, user_id={user_id}, user_email={user_email}, output_format={output_format}, language={language}, tag_audio_events={tag_audio_events}, diarize={diarize}")
         redis_client.publish(redis_channel, json.dumps({"file_id": file_id, "status": "processing", "message": "Transcription job started."}))
         
         api_key = os.getenv('ELEVENLABS_API_KEY')
@@ -135,7 +135,7 @@ def transcribe_file(self, file_id: int, output_format: str, language: str, diari
             db.commit()
             redis_client.publish(redis_channel, json.dumps({"file_id": file_id, "status": "error", "message": "Uploaded file is empty."}))
             return
-        
+                 
         if uploaded_file.is_video:
             original_file_path = uploaded_file.filepath
             audio_file_path = os.path.splitext(original_file_path)[0] + ".mp3"
@@ -159,38 +159,43 @@ def transcribe_file(self, file_id: int, output_format: str, language: str, diari
         
         # Map language to ElevenLabs codes
         ELEVENLABS_LANGUAGE_MAP = {'fa': 'fas', 'en': 'eng', 'ar': 'ara', 'tr': 'tur', 'fr': 'fra'}
-        language_code = ELEVENLABS_LANGUAGE_MAP.get(language, language)
-        diarize = (diarization == 'speaker')
-        
+        mapped_language = ELEVENLABS_LANGUAGE_MAP.get(language, language)
+
         client = ElevenLabs(api_key=api_key)
-        with open(uploaded_file.filepath, 'rb') as f:
-            audio_data = BytesIO(f.read())
-        transcription = client.speech_to_text.convert(
-            file=audio_data, model_id="scribe_v1", language_code=language_code,
-            tag_audio_events=True, timestamps_granularity="word", diarize=diarize
-        )
-        transcription_text = convert_transcription_to_format(transcription, output_format)
+        with open(uploaded_file.filepath, 'rb') as file_stream:
+            transcription = client.speech_to_text.convert(
+                file=file_stream,
+                model_id="scribe_v1",
+                language_code=mapped_language if language != 'auto' else None,
+                tag_audio_events=tag_audio_events,
+                diarize=diarize,
+                timestamps_granularity="word"
+            )
         
-        uploaded_file.transcription = transcription_text
+        output = convert_transcription_to_format(transcription, output_format)
+        uploaded_file.transcription = output
         uploaded_file.status = 'transcribed'
-        db.commit()
         
         if user:
-            used_minutes = uploaded_file.media_duration / 60.0
-            user.remaining_time = max(user.remaining_time - used_minutes, 0)
+            user.remaining_time -= uploaded_file.media_duration / 60
+            if user.remaining_time < 0:
+                user.remaining_time = 0
             db.commit()
         
-        redis_client.publish(redis_channel, json.dumps({"file_id": uploaded_file.id, "status": "transcribed", "message": "Transcription completed successfully."}))
+        db.commit()
+        processing_time = time.time() - start_time
+        logger.info(f"[transcribe_file] Completed. file_id={file_id}, user_id={user_id}, user_email={user_email}, duration={processing_time:.2f}s")
+        redis_client.publish(redis_channel, json.dumps({"file_id": file_id, "status": "transcribed", "message": "Transcription completed."}))
     except Exception as e:
-        logger.exception(f"[transcribe_file] Transcription error. file_id={file_id}, user_id={user_id}: {e}")
+        logger.exception(f"[transcribe_file] Error transcribing file_id={file_id}: {e}")
         uploaded_file.status = 'error'
         db.commit()
         redis_client.publish(redis_channel, json.dumps({"file_id": file_id, "status": "error", "message": f"Transcription failed: {str(e)}"}))
+        if isinstance(e, Exception):
+            self.retry(exc=e)
     finally:
-        end_time = time.time()
-        logger.info(f"[transcribe_file] Done. file_id={file_id}, user_id={user_id}, user_email={user_email}, duration={end_time - start_time:.2f}s")
         db.close()
-
+        
 def get_media_duration(file_path: str) -> float:
     """Get media file duration in seconds."""
     try:

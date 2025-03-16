@@ -73,5 +73,7 @@
     "basic_plan_hours": "1-4 hours",
     "standard_plan_hours": "5-20 hours",
     "premium_plan_hours": "+21 hours",
-    "insufficient_transcription_time": "Insufficient transcription time. Please buy more from Tutty."
+    "insufficient_transcription_time": "Insufficient transcription time. Please buy more from Tutty.",
+    "tag_audio_events": "Tag Audio Events",
+    "diarize": "Speaker Detection"
     }
