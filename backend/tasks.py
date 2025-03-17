@@ -26,7 +26,11 @@ def ends_with_punctuation(word_text):
     return word_text.strip().endswith(('.', '!', '?'))
 
 def generate_srt(transcription):
-    """Generate SRT format from ElevenLabs transcription object with proper subtitle splitting."""
+    """
+    Generate SRT format from ElevenLabs transcription object with proper subtitle splitting.
+    If diarization is enabled (i.e. words have a 'speaker_id' attribute),
+    include speaker labels at the start of a new block when the speaker changes.
+    """
     words = transcription.words
     srt_content = ""
     index = 1
@@ -39,21 +43,38 @@ def generate_srt(transcription):
     current_end = None
     text = ""
     word_count = 0
+    current_speaker = None
 
     for i, word in enumerate(words):
         if word.type == 'word':
-            # Initialize start time if this is the first word of a new entry
+            # If starting a new block, initialize start time and speaker
             if current_start is None:
                 current_start = word.start
+                current_speaker = getattr(word, 'speaker_id', None)
+                if current_speaker:
+                    text += f"{current_speaker}: "
+            else:
+                # Check if the speaker has changed
+                speaker = getattr(word, 'speaker_id', None)
+                if speaker and speaker != current_speaker:
+                    # End the current block and start a new one with the new speaker label
+                    srt_content += f"{index}\n{format_time(current_start)} --> {format_time(current_end)}\n{text.strip()}\n\n"
+                    index += 1
+                    current_start = word.start
+                    text = ""
+                    current_speaker = speaker
+                    if current_speaker:
+                        text += f"{current_speaker}: "
+
             current_end = word.end
             text += word.text + " "
             word_count += 1
 
-            # Calculate current duration
+            # Calculate the duration of the current block
             duration = current_end - current_start
             is_punctuation = ends_with_punctuation(word.text)
 
-            # Conditions to end the current SRT entry
+            # Conditions to end the current SRT entry:
             if (duration >= max_duration or
                 word_count >= max_words or
                 (is_punctuation and duration >= min_duration)):
@@ -62,6 +83,7 @@ def generate_srt(transcription):
                 current_start = None
                 text = ""
                 word_count = 0
+                current_speaker = None
             # Check for significant gaps between words
             elif i < len(words) - 1 and words[i + 1].type == 'word':
                 gap = words[i + 1].start - word.end
@@ -71,6 +93,7 @@ def generate_srt(transcription):
                     current_start = None
                     text = ""
                     word_count = 0
+                    current_speaker = None
 
     # Append any remaining text as the final SRT entry
     if current_start is not None and text.strip():
@@ -81,7 +104,23 @@ def generate_srt(transcription):
 def convert_transcription_to_format(transcription, output_format):
     """Convert ElevenLabs transcription to the specified output format."""
     if output_format == 'txt':
-        return transcription.text
+        # Check if diarization is enabled by looking for speaker_id in words
+        if any(hasattr(word, 'speaker_id') for word in transcription.words):
+            # Generate txt with speaker labels
+            text = ""
+            current_speaker = None
+            for word in transcription.words:
+                if word.type == 'word':
+                    speaker = getattr(word, 'speaker_id', None)
+                    if speaker != current_speaker:
+                        if current_speaker is not None:
+                            text += "\n"
+                        text += f"{speaker}: "
+                        current_speaker = speaker
+                    text += word.text + " "
+            return text.strip()
+        else:
+            return transcription.text
     elif output_format == 'srt':
         return generate_srt(transcription)
     elif output_format == 'json':
