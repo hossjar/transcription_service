@@ -16,8 +16,8 @@ export default function Contact() {
         {
             id: 'telegram',
             icon: <FaTelegramPlane className="h-6 w-6 text-blue-500" />,
-            identifier: '@tuttyir',
-            link: 'https://t.me/tuttyir',
+            identifier: '@tootty_ai',
+            link: 'https://t.me/tootty_com',
             ariaLabel: 'Telegram',
         },
         {

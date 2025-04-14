@@ -30,7 +30,7 @@ export default function Footer() {
             <div className="w-full md:w-1/3 flex justify-start items-center">
                 <p className="text-sm text-gray-500">
                 &copy; {new Date().getFullYear()}{' '}
-                <span className="font-semibold text-primary">Tutty</span>.
+                <span className="font-semibold text-primary">Tootty</span>.
                 {' '}Powered by IRSDN.
                 </p>
             </div>

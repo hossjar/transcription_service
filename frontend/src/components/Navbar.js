@@ -130,7 +130,7 @@ export default function Navbar() {
                 height={36}
                 className="mr-2"
             />
-            <span className="text-primary">Tutty</span>
+            <span className="text-primary">Tootty</span>
             </Link>
 
             {/* Desktop Menu */}
