@@ -8,7 +8,7 @@ export async function GET() {
   // Normally you would fetch dynamic routes from your database
   // For demonstration, we assume a few static pages and dynamic routes.
     
-    const baseUrl = 'https://tootty.com';
+    const baseUrl = 'https://tutty.ir';
     
     // Static pages
     const pages = [

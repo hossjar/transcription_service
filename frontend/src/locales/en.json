@@ -1,5 +1,5 @@
 {
-    "welcome_message": "Welcome to Tootty",
+    "welcome_message": "Welcome to tutty",
     "transcribe_your_media": "Transcribe your media files easily and quickly.",
     "login_with_google": "Login with Google",
     "start_here": "Start here",
@@ -73,7 +73,7 @@
     "basic_plan_hours": "1-4 hours",
     "standard_plan_hours": "5-20 hours",
     "premium_plan_hours": "+21 hours",
-    "insufficient_transcription_time": "Insufficient transcription time. Please buy more from Tootty.",
+    "insufficient_transcription_time": "Insufficient transcription time. Please buy more from tutty.",
     "tag_audio_events": "Tag Audio Events",
     "diarize": "Speaker Detection"
     }

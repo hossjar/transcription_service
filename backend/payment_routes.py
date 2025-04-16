@@ -23,12 +23,12 @@ if IS_SANDBOX:
     ZARINPAL_VERIFY_URL = "https://sandbox.zarinpal.com/pg/v4/payment/verify.json"
     ZARINPAL_START_PAY_URL = "https://sandbox.zarinpal.com/pg/StartPay/{authority}"
 else:
-    ZARINPAL_REQUEST_URL = "https://api.zarinpal.com/pg/v4/payment/request.json"
-    ZARINPAL_VERIFY_URL = "https://api.zarinpal.com/pg/v4/payment/verify.json"
-    ZARINPAL_START_PAY_URL = "https://www.zarinpal.com/pg/StartPay/{authority}"
-
+    ZARINPAL_REQUEST_URL = "https://payment.zarinpal.com/pg/v4/payment/request.json"
+    ZARINPAL_VERIFY_URL = "https://payment.zarinpal.com/pg/v4/payment/verify.json"
+    ZARINPAL_START_PAY_URL = "https://payment.zarinpal.com/pg/StartPay/{authority}"
+    
 # IMPORTANT: Update your callback so it hits the backend via "/api"
-CALLBACK_URL = "https://tootty.com/api/payment/verify"
+CALLBACK_URL = "https://tutty.ir/api/payment/verify"
 
 class PurchaseTimeRequest(BaseModel):
     hours: float

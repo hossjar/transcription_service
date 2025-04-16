@@ -47,8 +47,8 @@ export default function Home() {
                     __html: JSON.stringify({
                         "@context": "https://schema.org",
                         "@type": "WebSite",
-                        name: "Tootty",
-                        url: "https://tootty.com/",
+                        name: "tutty",
+                        url: "https://tutty.ir/",
                         description:
                             "Transcribe and convert media files (audio, video) automatically.",
                     }),

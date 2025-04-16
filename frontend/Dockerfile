@@ -2,6 +2,9 @@
 
 FROM node:18
 
+# Install and update SSL certificates
+RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Copy package files first to leverage Docker caching
@@ -26,8 +29,5 @@ RUN npm run build
 # Document that the container uses port 3000
 EXPOSE 3000
 
-# Use production start command
-#CMD ["npm", "start"]
-
-# Use development 
+# Use development command (since docker-compose.yml overrides this for dev mode)
 CMD ["npm", "run", "dev"]

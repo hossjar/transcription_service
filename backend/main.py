@@ -44,8 +44,8 @@ app.add_middleware(
         "http://localhost",
         "http://127.0.0.1",
         "http://frontend",
-        "https://tootty.com",
-        "https://www.tootty.com"
+        "https://tutty.ir",
+        "https://www.tutty.ir"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -164,7 +164,7 @@ async def read_me(request: Request, db: Session = Depends(get_db)):
 
 @app.get("/")
 async def read_root():
-    return {"message": "Welcome to Tootty Backend!"}
+    return {"message": "Welcome to tutty Backend!"}
 
 async def save_upload_file(upload_file: UploadFile, content: bytes) -> str:
     """Save uploaded file and return path."""

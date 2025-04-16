@@ -10,7 +10,7 @@ os.makedirs("logs", exist_ok=True)
 #    - Rotates at midnight
 #    - Keeps up to 30 backup log files
 file_handler = TimedRotatingFileHandler(
-    filename="logs/tootty.log",
+    filename="logs/tutty.log",
     when="midnight",   # rotate daily at midnight
     interval=1,        # every 1 day
     backupCount=30,    # keep 30 days of logs
@@ -31,7 +31,7 @@ console_handler.setLevel(logging.INFO)
 console_handler.setFormatter(formatter)
 
 # 5) Create a top-level logger
-logger = logging.getLogger("tootty")   # The name 'tootty' is arbitrary
+logger = logging.getLogger("tutty")   # The name 'tutty' is arbitrary
 logger.setLevel(logging.INFO)
 
 # 6) Attach both handlers
