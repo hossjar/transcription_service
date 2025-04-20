@@ -56,6 +56,7 @@ export default function FileUpload({ onUploadComplete }) {
             } else {
                 const data = await res.json();
                 if (data.detail === 'Insufficient transcription time. Please buy more time.') {
+                    // Set message as a localized link to /purchase
                     setMessage(
                         <Link href="/purchase" className="text-primary underline">
                             {t('insufficient_transcription_time')}
@@ -106,7 +107,6 @@ export default function FileUpload({ onUploadComplete }) {
                         onChange={(e) => setLanguage(e.target.value)}
                         className="border p-2 rounded-md mt-1"
                     >
-                        <option value="auto">Automatic</option>
                         <option value="fa">Persian</option>
                         <option value="en">English</option>
                         <option value="ar">Arabic</option>
