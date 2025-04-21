@@ -1,9 +1,10 @@
 /* frontend/src/components/FileUpload.js */
+
 'use client';
 
 import { useState, useContext } from 'react';
 import LanguageContext from '../context/LanguageContext';
-import Link from 'next/link'; 
+import Link from 'next/link';
 
 export default function FileUpload({ onUploadComplete }) {
     const [file, setFile] = useState(null);
@@ -12,9 +13,7 @@ export default function FileUpload({ onUploadComplete }) {
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
     const [outputFormat, setOutputFormat] = useState('txt');
     const [language, setLanguage] = useState('fa');
-    const [tagAudioEvents, setTagAudioEvents] = useState(false);
     const [diarize, setDiarize] = useState(false);
-
     const { t } = useContext(LanguageContext);
 
     const handleFileChange = (e) => {
@@ -24,7 +23,6 @@ export default function FileUpload({ onUploadComplete }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         if (!file) {
             setMessage(t('please_select_a_file') || 'Please select a file');
             return;
@@ -37,7 +35,7 @@ export default function FileUpload({ onUploadComplete }) {
         formData.append('file', file);
         formData.append('output_format', outputFormat);
         formData.append('language', language);
-        formData.append('tag_audio_events', tagAudioEvents.toString());
+        formData.append('tag_audio_events', 'false'); // Always set to false as per requirement
         formData.append('diarize', diarize.toString());
 
         try {
@@ -75,9 +73,12 @@ export default function FileUpload({ onUploadComplete }) {
 
     return (
         <div className="p-4 bg-white border rounded-md mt-8 shadow-sm">
-            <h2 className="text-xl md:text-2xl font-semibold mb-4 text-foreground">
-                {t('upload_file') || 'Upload File'}
+            <h2 className="text-xl md:text-2xl font-semibold mb-1 text-foreground">
+                {t('upload_media') || 'Upload Media'}
             </h2>
+            <p className="text-sm text-gray-500 mb-4">
+                {t('media_file_limits') || 'Audio or video files with maximum 4 hours length and 250 MB size'}
+            </p>
             <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
                 <input
                     type="file"
@@ -86,20 +87,7 @@ export default function FileUpload({ onUploadComplete }) {
                     className="border p-2 rounded-md"
                     disabled={uploading}
                 />
-
-                <label className="flex flex-col text-foreground">
-                    {t('output_format') || 'Output Format'}
-                    <select
-                        value={outputFormat}
-                        onChange={(e) => setOutputFormat(e.target.value)}
-                        className="border p-2 rounded-md mt-1"
-                    >
-                        <option value="txt">Text (txt)</option>
-                        <option value="srt">SubRip (srt)</option>
-                        <option value="json">JSON</option>
-                    </select>
-                </label>
-
+                
                 <label className="flex flex-col text-foreground">
                     {t('language') || 'Language'}
                     <select
@@ -147,16 +135,20 @@ export default function FileUpload({ onUploadComplete }) {
                     </select>
                 </label>
 
+                <label className="flex flex-col text-foreground">
+                    {t('output_format') || 'Output Format'}
+                    <select
+                        value={outputFormat}
+                        onChange={(e) => setOutputFormat(e.target.value)}
+                        className="border p-2 rounded-md mt-1"
+                    >
+                        <option value="txt">Text (txt)</option>
+                        <option value="srt">SubRip (srt)</option>
+                        <option value="json">JSON</option>
+                    </select>
+                </label>
+
                 <div className="flex flex-col space-y-2">
-                    <label className="flex items-center space-x-2">
-                        <input
-                            type="checkbox"
-                            checked={tagAudioEvents}
-                            onChange={(e) => setTagAudioEvents(e.target.checked)}
-                            className="form-checkbox h-5 w-5 text-primary"
-                        />
-                        <span>{t('tag_audio_events') || 'Tag Audio Events'}</span>
-                    </label>
                     <label className="flex items-center space-x-2">
                         <input
                             type="checkbox"
@@ -178,6 +170,7 @@ export default function FileUpload({ onUploadComplete }) {
                     {uploading ? (t('uploading') || 'Uploading...') : (t('upload') || 'Upload')}
                 </button>
             </form>
+
             {message && (
                 <p
                     className={`mt-4 ${

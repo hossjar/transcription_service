@@ -33,7 +33,7 @@
     "minutes": "دقیقه", 
     "upload_file": "انتخاب فایل",
     "output_format": " نوع خروجی",
-    "language": "زبان فایل",
+    "language": "زبان فایل ورودی",
     "your_files": " خروجی نتایج",
     "diarization": "تفکیک گویندگان",
     "no_diarization": "بدون تفکیک",
@@ -75,5 +75,7 @@
     "premium_plan_hours": "21 ساعت به بالا",
     "insufficient_transcription_time": "کمبود اعتبار، زمان بیشتر بخرید",
     "tag_audio_events": "شناسایی رویدادها",
-    "diarize": "تشخیص گوینده"
+    "diarize": "تشخیص گوینده",
+    "upload_media":"ارسال صوت یا تصویر",
+    "media_file_limits":" اندازه هر فایل حداکثر دو ساعت و یک گیگابایت"
     }

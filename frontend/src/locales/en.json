@@ -33,7 +33,7 @@
     "minutes": "minutes", 
     "upload_file": "Upload a File",
     "output_format": "Output Format:",
-    "language": "Language:",
+    "language": "Uploaded Media Language:",
     "your_files": "Your Files",
     "diarization": "Speaker Detection",
     "no_diarization": "No Detection",
@@ -75,5 +75,7 @@
     "premium_plan_hours": "+21 hours",
     "insufficient_transcription_time": "Insufficient transcription time. Please buy more from Tootty.",
     "tag_audio_events": "Tag Audio Events",
-    "diarize": "Speaker Detection"
+    "diarize": "Speaker Detection",
+    "upload_media":"Upload Media",
+    "media_file_limits":"Audio or Video files, Max 1GB and 2 hours"
     }
