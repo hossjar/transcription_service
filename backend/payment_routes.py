@@ -36,11 +36,11 @@ class PurchaseTimeRequest(BaseModel):
 def calculate_price(hours: float) -> float:
     """Calculate price based on hours purchased."""
     if hours <= 4:
-        return hours * 160000
-    elif hours <= 20:
-        return hours * 140000
+        return hours * 120000
+    elif hours <= 9:
+        return hours * 100000
     else:
-        return hours * 130000
+        return hours * 90000
 
 @payment_router.post("/purchase")
 async def initiate_purchase(
