@@ -10,8 +10,8 @@ services:
       POSTGRES_DB: tuttydb
     volumes:
       - db_data:/var/lib/postgresql/data
-    ports:
-      - '5432:5432'
+    # ports:
+    #   - '5432:5432'
 
   nginx:
     image: nginx:latest
@@ -27,8 +27,8 @@ services:
     image: redis:7-alpine
     environment:
       TZ: Asia/Tehran
-    ports:
-      - '6379:6379'
+    # ports:
+    #   - '6379:6379'
 
   backend:
     build:
@@ -45,8 +45,8 @@ services:
       - redis
     env_file:
       - ./backend/.env
-    ports:
-      - '8000:8000'
+    # ports:
+    #   - '8000:8000'
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -92,8 +92,8 @@ services:
     depends_on:
       - backend
       - redis
-    ports:
-      - '3000:3000'
+    # ports:
+    #   - '3000:3000'
 
 volumes:
   frontend_next:

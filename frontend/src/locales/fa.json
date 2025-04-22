@@ -15,6 +15,7 @@
     "admin_panel": "پنل مدیریت",
     "next": "بعدی",
     "previous": "قبلی",
+    "upload_completed_transcription_in_progress":"آپلود انجام شد، درحال تبدیل به متن...",
     "page_of": "صفحه {{currentPage}} از {{totalPages}}",
     "ready_to_get_started": "آماده شروع هستید؟",
     "transcription_completed": "تبدیل به متن انجام شد.",
