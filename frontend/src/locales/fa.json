@@ -77,6 +77,6 @@
     "insufficient_transcription_time": "کمبود اعتبار، زمان بیشتر بخرید",
     "tag_audio_events": "شناسایی رویدادها",
     "diarize": "تشخیص گوینده",
-    "upload_media":"ارسال صوت یا تصویر",
+    "upload_media":"ارسال فایل صوت یا فیلم",
     "media_file_limits":" اندازه هر فایل حداکثر دو ساعت و یک گیگابایت"
     }
