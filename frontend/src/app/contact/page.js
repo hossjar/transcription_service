@@ -14,24 +14,20 @@ export default function Contact() {
     // Contact Methods Data
     const contactMethods = [
         {
-            id: 'telegram',
-            icon: <FaTelegramPlane className="h-6 w-6 text-blue-500" />,
-            identifier: '@tootty_ai',
-            link: 'https://t.me/tootty_com',
-            ariaLabel: 'Telegram',
-        },
-        {
-            id: 'phone_whatsapp',
+            id: 'phone_whatsapp_telegram',
+            label: locale === 'fa' ? 'تماس:' : 'Contact:',
+            identifier: '+989335622283',
             icons: [
                 <PhoneIcon key="phone" className="h-6 w-6 text-green-500" />,
                 <FaWhatsapp key="whatsapp" className="h-6 w-6 text-green-500" />,
+                <FaTelegramPlane key="telegram" className="h-6 w-6 text-blue-500" />,
             ],
-            identifier: '+989335622283',
-            links: {
-                phone: 'tel:+989335622283',
-                whatsapp: 'https://wa.me/989335622283',
-            },
-            ariaLabel: 'Phone and WhatsApp',
+            links: [
+                'tel:+989335622283',
+                'https://wa.me/989335622293',
+                'https://t.me/tootty_com',
+            ],
+            ariaLabels: ['Phone', 'WhatsApp', 'Telegram'],
         },
     ];
 
@@ -43,51 +39,25 @@ export default function Contact() {
 
             <div className="space-y-6">
                 {contactMethods.map((method) => (
-                    <div
-                        key={method.id}
-                        className={`flex items-center ${
-                            isRTL ? 'flex-row-reverse' : 'flex-row'
-                        }`}
-                    >
-                        {method.id === 'phone_whatsapp' ? (
-                            <div className="flex items-center space-x-3">
-                                {/* Phone Link */}
+                    <div key={method.id} className="text-center mb-4">
+                        <p className="text-center" dir="auto">
+                            <span className="font-bold">{method.label}</span> {method.identifier}
+                        </p>
+                        <div className="flex justify-center space-x-4 mt-2">
+                            {method.icons.map((icon, index) => (
                                 <a
-                                    href={method.links.phone}
-                                    className="flex items-center space-x-1"
-                                    aria-label="Phone"
+                                    key={index}
+                                    href={method.links[index]}
+                                    {...(method.links[index].startsWith('http')
+                                        ? { target: '_blank', rel: 'noopener noreferrer' }
+                                        : {})}
+                                    aria-label={method.ariaLabels[index]}
+                                    className="hover:scale-110 transition-transform"
                                 >
-                                    {method.icons[0]}
+                                    {icon}
                                 </a>
-                                {/* WhatsApp Link */}
-                                <a
-                                    href={method.links.whatsapp}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center space-x-1"
-                                    aria-label="WhatsApp"
-                                >
-                                    {method.icons[1]}
-                                </a>
-                                {/* Phone Number */}
-                                <span className="text-lg text-gray-700">
-                                    {method.identifier}
-                                </span>
-                            </div>
-                        ) : (
-                            <a
-                                href={method.link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center space-x-3"
-                                aria-label={method.ariaLabel}
-                            >
-                                {method.icon}
-                                <span className="text-lg text-gray-700">
-                                    {method.identifier}
-                                </span>
-                            </a>
-                        )}
+                            ))}
+                        </div>
                     </div>
                 ))}
             </div>
