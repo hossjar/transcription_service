@@ -57,7 +57,7 @@ export default function Footer() {
                     >
                     {`
                         var enamadHost = 'https://trustseal.enamad.ir';
-                        var enamadParam = '?id=564053&Code=4PjgA4U3yuO3xKhgUj7WfjAcvjjPYsjX';
+                        var enamadParam = '?id=594666&Code=YY2Mg6gGdAGYLPpkfhWUk8xBU1Mqh29g';
                         document.getElementById('enamad-root').innerHTML = 
                         '<a target="_blank" href="' + enamadHost + enamadParam + '" ' +
                         'referrerPolicy="origin">' +
