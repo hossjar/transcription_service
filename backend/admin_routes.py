@@ -68,6 +68,7 @@ def list_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), a
             picture=user.picture,
             is_admin=user.is_admin,
             remaining_time=user.remaining_time,
+            expiration_date=user.expiration_date,
             successful_jobs=successful_jobs,
             failed_jobs=unsuccessful_jobs,
             # We store minutes into total_used_time:
@@ -96,13 +97,11 @@ def update_user_time(
     db: Session = Depends(get_db),
     admin_user: models.User = Depends(get_admin_user)
 ):
-    amount = request_body.amount  # Amount in minutes
-
+    amount = request_body.amount
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-
-    user.remaining_time += amount  # No need to multiply by 60, we already store in minutes
+    user.remaining_time += amount
     if user.remaining_time < 0:
         user.remaining_time = 0
     db.commit()

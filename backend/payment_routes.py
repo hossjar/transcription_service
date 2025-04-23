@@ -11,12 +11,12 @@ from database import get_db
 from dependencies import get_current_user
 from models import User, PaymentTransaction, PaymentStatus
 from pydantic import BaseModel
+from datetime import datetime, timedelta, timezone
 
 payment_router = APIRouter(prefix="/payment", tags=["payment"])
 
-# Environment variables - add these to your .env file
 ZARINPAL_MERCHANT_ID = os.getenv('ZARINPAL_MERCHANT_ID')
-IS_SANDBOX = os.getenv('ZARINPAL_SANDBOX', 'true').lower() == 'true'  # Default to sandbox mode
+IS_SANDBOX = os.getenv('ZARINPAL_SANDBOX', 'true').lower() == 'true'
 
 if IS_SANDBOX:
     ZARINPAL_REQUEST_URL = "https://sandbox.zarinpal.com/pg/v4/payment/request.json"
@@ -65,7 +65,7 @@ async def initiate_purchase(
         # Add VAT (example: 10%) and convert to Rials if needed
         vat = 0.1
         amount = calculate_price(request.hours) * (1 + vat)
-        amount = int(amount * 10)  # Example: *10 => convert Tomans to Rials if required
+        amount = int(amount * 10)
 
         # Create payment transaction record
         transaction = PaymentTransaction(
@@ -82,7 +82,7 @@ async def initiate_purchase(
 
         zarinpal_request = {
             "merchant_id": ZARINPAL_MERCHANT_ID,
-            "amount": amount,  # in Rials
+            "amount": amount,
             "description": f"Purchase {request.hours} hours of transcription time",
             "callback_url": f"{CALLBACK_URL}?transaction_id={transaction.id}",
             "metadata": metadata
@@ -176,7 +176,8 @@ async def verify_payment(
 
             # Update user's remaining time
             if user:
-                user.remaining_time += transaction.hours_purchased * 60  # hours -> minutes
+                user.remaining_time += transaction.hours_purchased * 60
+                user.expiration_date = datetime.now(timezone.utc) + timedelta(days=31)
                 db.commit()
 
             logger.info(

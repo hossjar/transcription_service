@@ -19,7 +19,8 @@ class User(Base):
     successful_jobs = Column(Integer, default=0)
     failed_jobs = Column(Integer, default=0)
     last_login = Column(DateTime, nullable=True)
-    is_admin = Column(Boolean, default=False)    
+    is_admin = Column(Boolean, default=False)
+    expiration_date = Column(DateTime, nullable=True)  # New field for expiration
 
     files = relationship("UploadedFile", back_populates="user")
     activities = relationship("UserActivity", back_populates="user")

@@ -12,10 +12,11 @@ class UserBase(BaseModel):
     is_admin: bool
 
     class Config:
-        from_attributes = True  
+        from_attributes = True
         
 class User(UserBase):
     remaining_time: float
+    expiration_date: Optional[datetime]  # Added expiration_date
     total_used_time: float
     successful_jobs: int
     failed_jobs: int
@@ -68,7 +69,6 @@ class UserActivityBase(BaseModel):
 
 class UserActivity(UserActivityBase):
     pass
-
 
 class UpdateTimeRequest(BaseModel):
     amount: float

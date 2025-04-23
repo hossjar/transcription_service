@@ -160,7 +160,19 @@ async def read_me(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
         return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": "Not authenticated"})
-    return {"id": user.id, "email": user.email, "name": user.name, "picture": user.picture, "remaining_time": user.remaining_time, "is_admin": user.is_admin}
+    if user.expiration_date and datetime.now(timezone.utc) > user.expiration_date:
+        user.remaining_time = 0
+        db.commit()
+    return {
+        "id": user.id,
+        "email": user.email,
+        "name": user.name,
+        "picture": user.picture,
+        "remaining_time": user.remaining_time,
+        "expiration_date": user.expiration_date.isoformat() if user.expiration_date else None,
+        "is_admin": user.is_admin
+    }
+
 
 @app.get("/")
 async def read_root():
@@ -214,6 +226,9 @@ async def upload_file(
             logger.error(f"Invalid media duration for {file.filename}")
             raise HTTPException(status_code=400, detail="Could not determine media duration")
         media_duration_minutes = media_duration / 60
+        if user.expiration_date and datetime.now(timezone.utc) > user.expiration_date:
+            user.remaining_time = 0
+            db.commit()
         if user.remaining_time <= 0 or user.remaining_time < media_duration_minutes:
             if os.path.exists(file_location):
                 os.remove(file_location)
