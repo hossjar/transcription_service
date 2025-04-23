@@ -2,6 +2,7 @@
 from datetime import datetime, timezone
 import os
 import uuid
+from sqlalchemy import text
 from fastapi import FastAPI, Request, Depends, HTTPException, status, UploadFile, File, Form, Query
 import requests
 from fastapi.responses import RedirectResponse, JSONResponse, StreamingResponse
@@ -153,6 +154,14 @@ async def logout(request: Request, db: Session = Depends(get_db)):
         db.commit()
     request.session.pop('user_id', None)
     return JSONResponse(status_code=200, content={"detail": "Logged out successfully"})
+
+
+
+@app.get("/health")
+async def health_check():
+    # Basic check: just confirm the app is responding
+    return {"status": "ok"}
+
 
 @app.get("/me")
 async def read_me(request: Request, db: Session = Depends(get_db)):
