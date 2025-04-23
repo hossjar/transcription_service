@@ -122,7 +122,8 @@ export default function Home() {
     const handleDownload = (file) => {
         if (!file.transcription) return;
         const extension = file.output_format === 'srt' ? 'srt' : 'txt';
-        const blob = new Blob([file.transcription], { type: 'text/plain;charset=utf-8' });
+        const bom = '\uFEFF'; // UTF-8 Byte Order Mark
+        const blob = new Blob([bom + file.transcription], { type: 'text/plain;charset=utf-8' });
         const link = document.createElement('a');
         link.download = `${file.filename}_transcription.${extension}`;
         link.href = window.URL.createObjectURL(blob);
@@ -131,7 +132,6 @@ export default function Home() {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(link.href);
     };
-
     const handleCopy = async (transcription) => {
         if (!transcription) return;
         try {
