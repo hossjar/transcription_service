@@ -1,4 +1,5 @@
 # backend/tasks.py
+
 import os
 import json
 import redis
@@ -10,6 +11,7 @@ from database import SessionLocal
 import models
 from elevenlabs.client import ElevenLabs
 from io import BytesIO
+from sqlalchemy import update, func  # Added for atomic updates
 
 redis_client = redis.Redis(host='redis', port=6379, db=0)
 
@@ -38,7 +40,6 @@ def generate_srt(transcription):
     min_duration = 1.0    # Minimum duration to avoid very short entries
     max_words = 15        # Maximum number of words per entry
     max_gap = 0.5         # Maximum gap between words to start a new entry in seconds
-
     current_start = None
     current_end = None
     text = ""
@@ -145,13 +146,15 @@ def transcribe_file(self, file_id: int, output_format: str, language: str, tag_a
         if not uploaded_file:
             logger.error(f"[transcribe_file] File not found in DB. file_id={file_id}")
             return
+
         user_id = uploaded_file.user_id
         user = db.query(models.User).filter(models.User.id == user_id).first()
         user_email = user.email if user else "unknown"
         redis_channel = f"user_{user_id}_updates"
+
         logger.info(f"[transcribe_file] Starting transcription. file_id={file_id}, user_id={user_id}, user_email={user_email}, output_format={output_format}, language={language}, tag_audio_events={tag_audio_events}, diarize={diarize}")
         redis_client.publish(redis_channel, json.dumps({"file_id": file_id, "status": "processing", "message": "Transcription job started."}))
-        
+
         api_key = os.getenv('ELEVENLABS_API_KEY')
         if not api_key:
             logger.error(f"[transcribe_file] No ElevenLabs API key. file_id={file_id}, user_id={user_id}")
@@ -159,14 +162,14 @@ def transcribe_file(self, file_id: int, output_format: str, language: str, tag_a
             db.commit()
             redis_client.publish(redis_channel, json.dumps({"file_id": file_id, "status": "error", "message": "ElevenLabs API key not found."}))
             return
-        
+
         if not os.path.exists(uploaded_file.filepath):
             logger.error(f"[transcribe_file] File not found on disk. path={uploaded_file.filepath}, user_id={user_id}")
             uploaded_file.status = 'error'
             db.commit()
             redis_client.publish(redis_channel, json.dumps({"file_id": file_id, "status": "error", "message": "Uploaded file not found on server."}))
             return
-        
+
         file_size = os.path.getsize(uploaded_file.filepath)
         if file_size == 0:
             logger.error(f"[transcribe_file] File is empty. file_id={file_id}, user_id={user_id}")
@@ -174,7 +177,7 @@ def transcribe_file(self, file_id: int, output_format: str, language: str, tag_a
             db.commit()
             redis_client.publish(redis_channel, json.dumps({"file_id": file_id, "status": "error", "message": "Uploaded file is empty."}))
             return
-                 
+
         if uploaded_file.is_video:
             original_file_path = uploaded_file.filepath
             audio_file_path = os.path.splitext(original_file_path)[0] + ".mp3"
@@ -195,11 +198,10 @@ def transcribe_file(self, file_id: int, output_format: str, language: str, tag_a
                 db.commit()
                 redis_client.publish(redis_channel, json.dumps({"file_id": file_id, "status": "error", "message": "Failed to extract audio from video file."}))
                 return
-        
+
         # Map language to ElevenLabs codes
         ELEVENLABS_LANGUAGE_MAP = {'fa': 'fas', 'en': 'eng', 'ar': 'ara', 'tr': 'tur', 'fr': 'fra'}
         mapped_language = ELEVENLABS_LANGUAGE_MAP.get(language, language)
-
         client = ElevenLabs(api_key=api_key)
         with open(uploaded_file.filepath, 'rb') as file_stream:
             transcription = client.speech_to_text.convert(
@@ -210,21 +212,26 @@ def transcribe_file(self, file_id: int, output_format: str, language: str, tag_a
                 diarize=diarize,
                 timestamps_granularity="word"
             )
-        
+
         output = convert_transcription_to_format(transcription, output_format)
         uploaded_file.transcription = output
         uploaded_file.status = 'transcribed'
-        
+
         if user:
-            user.remaining_time -= uploaded_file.media_duration / 60
-            if user.remaining_time < 0:
-                user.remaining_time = 0
+            deduction = uploaded_file.media_duration / 60
+            logger.info(f"[transcribe_file] Deducting {deduction} minutes from user_id={user_id}, user_email={user_email}")
+            db.execute(
+                update(models.User)
+                .where(models.User.id == user_id)
+                .values(remaining_time=func.greatest(models.User.remaining_time - deduction, 0))
+            )
             db.commit()
-        
+
         db.commit()
         processing_time = time.time() - start_time
         logger.info(f"[transcribe_file] Completed. file_id={file_id}, user_id={user_id}, user_email={user_email}, duration={processing_time:.2f}s")
         redis_client.publish(redis_channel, json.dumps({"file_id": file_id, "status": "transcribed", "message": "Transcription completed."}))
+
     except Exception as e:
         logger.exception(f"[transcribe_file] Error transcribing file_id={file_id}: {e}")
         uploaded_file.status = 'error'
@@ -234,7 +241,7 @@ def transcribe_file(self, file_id: int, output_format: str, language: str, tag_a
             self.retry(exc=e)
     finally:
         db.close()
-        
+
 def get_media_duration(file_path: str) -> float:
     """Get media file duration in seconds."""
     try:
