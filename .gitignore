@@ -6,7 +6,8 @@
 uploads/
 fonts/
 env/
-
+.env.local
+.env.*
 # Operating System files
 .DS_Store
 Thumbs.db
