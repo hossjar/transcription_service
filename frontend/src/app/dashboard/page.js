@@ -15,7 +15,8 @@ export default function Home() {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalFiles, setTotalFiles] = useState(0);
     const [filesPerPage] = useState(10);
-    const [loadingUser, setLoadingUser] = useState(true);
+    const [isLoaderVisible, setIsLoaderVisible] = useState(true);
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
     const [loading, setLoading] = useState(false);
     const [expandedFiles, setExpandedFiles] = useState({});
     const { t } = useContext(LanguageContext);
@@ -23,17 +24,37 @@ export default function Home() {
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
     useEffect(() => {
-        const cachedUser = localStorage.getItem('tutty_user');
-        if (cachedUser) {
-            try {
-                const parsed = JSON.parse(cachedUser);
-                setUser(parsed);
-                setLoadingUser(false);
-            } catch (err) {
-                console.warn('Corrupted user data in localStorage:', err);
-            }
-        }
-        fetchUser();
+        const minLoaderTime = 2000; // 2 seconds
+
+        // Start a timer for the minimum loader display time
+        const timer = setTimeout(() => {
+            setIsLoaderVisible(false);
+        }, minLoaderTime);
+
+        // Fetch user data
+        fetch(`${API_URL}/me`, { credentials: 'include' })
+            .then(res => {
+                if (res.ok) {
+                    return res.json().then(data => {
+                        setUser(data);
+                        localStorage.setItem('tutty_user', JSON.stringify(data));
+                        setIsDataLoaded(true);
+                    });
+                } else {
+                    setUser(null);
+                    localStorage.removeItem('tutty_user');
+                    setIsDataLoaded(true); // Even if no user, consider data loaded
+                }
+            })
+            .catch(err => {
+                console.error('Error fetching user:', err);
+                setUser(null);
+                localStorage.removeItem('tutty_user');
+                setIsDataLoaded(true);
+            });
+
+        // Cleanup timer on unmount
+        return () => clearTimeout(timer);
     }, []);
 
     useEffect(() => {
@@ -78,8 +99,6 @@ export default function Home() {
             console.error('Error fetching user:', err);
             setUser(null);
             localStorage.removeItem('tutty_user');
-        } finally {
-            setLoadingUser(false);
         }
     }
 
@@ -132,6 +151,7 @@ export default function Home() {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(link.href);
     };
+
     const handleCopy = async (transcription) => {
         if (!transcription) return;
         try {
@@ -157,11 +177,13 @@ export default function Home() {
         fetchFiles(newPage);
     };
 
-    if (loadingUser) {
+    // Show loader if still within minimum time AND data isn't loaded
+    // If data is loaded and minimum time has passed, show dashboard immediately
+    if (isLoaderVisible && !isDataLoaded) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[50vh]">
                 <ParrotLoader />
-                <p className="mt-4 text-xl font-semibold">Loading your dashboard...</p>
+                <p className="mt-4 text-xl font-semibold">Loading dashboard</p>
             </div>
         );
     }
@@ -185,7 +207,6 @@ export default function Home() {
         );
     }
 
-    // If we have a user, show the real dashboard:
     return (
         <div className="max-w-7xl mx-auto p-4">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
