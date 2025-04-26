@@ -1,4 +1,3 @@
-/* frontend/src/app/dashboard/page.js */
 'use client';
 
 import { useEffect, useState, useContext } from 'react';
@@ -8,6 +7,7 @@ import useSSE from '../hooks/useSSE';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid';
 import LanguageContext from '../../context/LanguageContext';
 import Link from 'next/link';
+import ParrotLoader from '../../components/ParrotLoader';
 
 export default function Home() {
     const [user, setUser] = useState(null);
@@ -157,15 +157,11 @@ export default function Home() {
         fetchFiles(newPage);
     };
 
-    // ───────────────────────────────────────────────────────────────────
-    // Show a short "Loading" if we haven't confirmed the user from either
-    // localStorage or background fetch. If we got user from localStorage,
-    // loadingUser is already false by now.
-    // ───────────────────────────────────────────────────────────────────
     if (loadingUser) {
         return (
-            <div className="p-4 text-center">
-                <p className="text-xl font-semibold">Loading your dashboard...</p>
+            <div className="flex flex-col items-center justify-center min-h-[50vh]">
+                <ParrotLoader />
+                <p className="mt-4 text-xl font-semibold">Loading your dashboard...</p>
             </div>
         );
     }

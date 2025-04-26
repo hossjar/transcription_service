@@ -1,0 +1,237 @@
+.container {
+    position: relative;
+    height: 10em;
+    width: 10em;
+    font-size: 1em; /* Default font size for scaling */
+}
+
+.container::before {
+    content: "";
+    position: absolute;
+    top: 3.5em;
+    left: 3.5em;
+    height: 1.5em;
+    width: 1.5em;
+    background-color: #000000;
+    border-radius: 50%;
+    animation: slide 2s linear infinite;
+    z-index: 4;
+}
+
+.feather {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 10em;
+    width: 5em;
+    overflow: hidden;
+    transform-origin: 100% 50%;
+    animation: clockwise 2s linear infinite;
+    z-index: 2;
+}
+
+.feather::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 10em;
+    width: 10em;
+    background-color: #399918;
+    border-radius: 50%;
+}
+
+.face-top {
+    position: absolute;
+    top: 2em;
+    left: 2em;
+    height: 6em;
+    width: 3em;
+    overflow: hidden;
+    transform-origin: 100% 50%;
+    animation: anti-clockwise 2s linear infinite;
+    z-index: 3;
+}
+
+.face-top::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 6em;
+    width: 6em;
+    background-color: #ffffff;
+    border-radius: 50%;
+}
+
+.face-bottom {
+    position: absolute;
+    bottom: 2em;
+    left: 2em;
+    height: 3em;
+    width: 3em;
+    overflow: hidden;
+    transform-origin: 100% 0%;
+    animation: half-anti-clockwise 2s linear infinite;
+    z-index: 4;
+}
+
+.face-bottom::before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 6em;
+    width: 6em;
+    background-color: #e2e1e2;
+    border-radius: 50%;
+}
+
+.beak-top {
+    position: absolute;
+    top: 2em;
+    right: 2em;
+    height: 3em;
+    width: 3em;
+    overflow: hidden;
+    transform-origin: 0% 100%;
+    animation: half-anti-clockwise 2s linear infinite;
+    z-index: 5;
+}
+
+.beak-top::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 6em;
+    width: 6em;
+    background-color: #FF6600;
+    border-radius: 50%;
+}
+
+.beak-bottom {
+    position: absolute;
+    bottom: 3.5em;
+    right: 3.5em;
+    height: 1.5em;
+    width: 1.5em;
+    overflow: hidden;
+    transform-origin: 0% 0%;
+    animation: half-clockwise 2s linear infinite;
+    z-index: 1;
+}
+
+.beak-bottom::before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    height: 4em;
+    width: 4em;
+    background-color: #e69d01;
+    border-radius: 50%;
+}
+
+@keyframes slide {
+    0% {
+        transform: translate3d(0, 0, 0);
+    }
+    25% {
+        transform: translate3d(1.5em, 0, 0);
+    }
+    50% {
+        transform: translate3d(1.5em, 0, 0);
+    }
+    75% {
+        transform: translate3d(0, 0, 0);
+    }
+    100% {
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes clockwise {
+    0% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(180deg);
+    }
+    50% {
+        transform: rotate(180deg);
+    }
+    75% {
+        transform: rotate(360deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes anti-clockwise {
+    0% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(-180deg);
+    }
+    50% {
+        transform: rotate(-180deg);
+    }
+    75% {
+        transform: rotate(-360deg);
+    }
+    100% {
+        transform: rotate(-360deg);
+    }
+}
+
+@keyframes half-clockwise {
+    0% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(90deg);
+    }
+    50% {
+        transform: rotate(90deg);
+    }
+    75% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+@keyframes half-anti-clockwise {
+    0% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(-90deg);
+    }
+    50% {
+        transform: rotate(-90deg);
+    }
+    75% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        font-size: 0.8em;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        font-size: 0.6em;
+    }
+}
