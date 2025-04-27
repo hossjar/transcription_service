@@ -323,11 +323,11 @@ async def sse_endpoint(request: Request, db: Session = Depends(get_db)):
                     yield f"data: {data}\n\n"
                 
                 # Send keep-alive every 3 second
-                if time.time() - last_keepalive >= 3:
+                if time.time() - last_keepalive >= 15:
                     yield ": keepalive\n\n"
                     last_keepalive = time.time()
                 
-                await asyncio.sleep(0.3)  # Small sleep to prevent tight loop
+                await asyncio.sleep(1)  # Small sleep to prevent tight loop
         except Exception as e:
             logger.error(f"SSE error for user {user.email}: {str(e)}")
         finally:
