@@ -24,7 +24,7 @@ export default function Home() {
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
     useEffect(() => {
-        const minLoaderTime = 2000; // 2 seconds
+        const minLoaderTime = 3000; // 3 seconds
 
         // Start a timer for the minimum loader display time
         const timer = setTimeout(() => {
