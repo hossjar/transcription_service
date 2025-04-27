@@ -3,126 +3,81 @@ import { useEffect, useRef } from 'react';
 
 export default function useSSE(onMessage) {
     const eventSourceRef = useRef(null);
-    const retryTimeoutRef = useRef(null);
-    const isConnectingRef = useRef(false);
 
     useEffect(() => {
         const API_URL = process.env.NEXT_PUBLIC_API_URL;
-        let retryCount = 0;
-        const MAX_RETRIES = 3;
-        const RETRY_DELAY = 10000;
 
         function connect() {
-            if (isConnectingRef.current) {
-                return;
-            }
-
+            // Close existing connection if it exists
             if (eventSourceRef.current) {
                 eventSourceRef.current.close();
             }
+            console.log('Connecting to SSE...');
+            const eventSource = new EventSource(`${API_URL}/api/sse`, { withCredentials: true });
+            eventSourceRef.current = eventSource;
 
-            try {
-                isConnectingRef.current = true;
-                const eventSource = new EventSource(`${API_URL}/sse`, { withCredentials: true });
-                eventSourceRef.current = eventSource;
-
-                eventSource.onmessage = (event) => {
-                    try {
-                        const data = JSON.parse(event.data);
-                        onMessage(data);
-                        retryCount = 0;
-                    } catch (error) {
-                        // Silently handle message parsing errors
+            // Handle incoming messages
+            eventSource.onmessage = (event) => {
+                try {
+                    if (event.data === ': keepalive') {
+                        console.log('Received keep-alive');
+                        return;
                     }
-                };
+                    const data = JSON.parse(event.data);
+                    console.log('SSE update:', data);
+                    onMessage(data);
+                } catch (error) {
+                    console.error('Error parsing SSE message:', error);
+                }
+            };
 
-                eventSource.onopen = () => {
-                    isConnectingRef.current = false;
-                    retryCount = 0;
-                };
+            // Log connection opening
+            eventSource.onopen = () => {
+                console.log('SSE connection opened');
+            };
 
-                eventSource.onerror = () => {
-                    // Silently close the connection
-                    eventSource.close();
-                    isConnectingRef.current = false;
-
-                    // Only retry if we haven't exceeded MAX_RETRIES
-                    if (retryCount < MAX_RETRIES) {
-                        retryCount++;
-                        const delay = RETRY_DELAY * retryCount;
-                        
-                        if (retryTimeoutRef.current) {
-                            clearTimeout(retryTimeoutRef.current);
-                        }
-                        
-                        retryTimeoutRef.current = setTimeout(() => {
-                            connect();
-                        }, delay);
-                    }
-                };
-
-            } catch (error) {
-                // Silently handle connection errors
-                isConnectingRef.current = false;
-            }
+            // Log errors but don’t close the connection
+            eventSource.onerror = (error) => {
+                console.error('SSE error:', error);
+                // Let EventSource reconnect automatically
+            };
         }
 
-        // Handle visibility change silently
+        connect();
+
+        // Reconnect if page becomes visible or browser comes online
         const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
+            if (document.visibilityState === 'visible' && eventSourceRef.current.readyState === EventSource.CLOSED) {
+                console.log('Page visible, reconnecting SSE');
                 connect();
             }
         };
 
-        // Handle online/offline status silently
         const handleOnline = () => {
-            connect();
-        };
-
-        const handleOffline = () => {
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
+            if (eventSourceRef.current.readyState === EventSource.CLOSED) {
+                console.log('Browser online, reconnecting SSE');
+                connect();
             }
         };
 
-        // Add event listeners
         document.addEventListener('visibilitychange', handleVisibilityChange);
         window.addEventListener('online', handleOnline);
-        window.addEventListener('offline', handleOffline);
 
-        // Initial connection only if online
-        if (navigator.onLine) {
-            connect();
-        }
-
-        // Cleanup function
+        // Cleanup on unmount
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             window.removeEventListener('online', handleOnline);
-            window.removeEventListener('offline', handleOffline);
-            
-            if (retryTimeoutRef.current) {
-                clearTimeout(retryTimeoutRef.current);
-            }
-            
             if (eventSourceRef.current) {
                 eventSourceRef.current.close();
+                console.log('SSE connection closed on cleanup');
             }
         };
     }, [onMessage]);
 
-    // Return a function to manually reconnect if needed
     return {
         reconnect: () => {
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
-            }
-            if (retryTimeoutRef.current) {
-                clearTimeout(retryTimeoutRef.current);
-            }
-            isConnectingRef.current = false;
-            // Will trigger useEffect and reconnect
-            window.dispatchEvent(new Event('online'));
-        }
+            console.log('Manual SSE reconnect');
+            connect();
+        },
     };
 }

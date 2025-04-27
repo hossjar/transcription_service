@@ -294,39 +294,53 @@ async def delete_file(file_id: int, request: Request, db: Session = Depends(get_
     logger.info(f"User {user.email} deleted file id {file_id}")
     return {"detail": "File deleted"}
 
-@app.get("/sse")
+@app.get("/api/sse")
 async def sse_endpoint(request: Request, db: Session = Depends(get_db)):
-    """Server-Sent Events for real-time updates."""
+    """Stream real-time updates via SSE."""
     user = get_current_user(request, db)
     if not user:
         return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
+    
     user_channel = f"user_{user.id}_updates"
+    
     async def event_generator():
         redis_conn = await aioredis.from_url("redis://redis:6379")
         pubsub = redis_conn.pubsub()
         await pubsub.subscribe(user_channel)
         last_keepalive = time.time()
+        
         try:
             while True:
+                # Check if client disconnected
                 if await request.is_disconnected():
-                    logger.info(f"User {user.email} disconnected from SSE.")
+                    logger.info(f"User {user.email} disconnected from SSE")
                     break
+                
+                # Listen for Redis messages
                 message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
                 if message and message['type'] == 'message':
                     data = message['data'].decode('utf-8')
                     yield f"data: {data}\n\n"
-                if time.time() - last_keepalive > 15:
+                
+                # Send keep-alive every 3 second
+                if time.time() - last_keepalive >= 3:
                     yield ": keepalive\n\n"
                     last_keepalive = time.time()
-                await asyncio.sleep(0.1)
+                
+                await asyncio.sleep(0.3)  # Small sleep to prevent tight loop
         except Exception as e:
             logger.error(f"SSE error for user {user.email}: {str(e)}")
         finally:
             logger.info(f"SSE connection closed for user {user.email}")
             await pubsub.unsubscribe(user_channel)
-            await pubsub.close()
-    return StreamingResponse(event_generator(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
-
+            await redis_conn.close()
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+    )
+    
 @app.get("/login/google")
 async def google_login():
     """Redirect to Google OAuth2 login."""
