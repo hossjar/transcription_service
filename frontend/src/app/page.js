@@ -1,4 +1,3 @@
-/* frontend/src/app/page.js */
 'use client';
 
 import { useEffect, useState, useContext } from 'react';
@@ -11,7 +10,7 @@ export default function Home() {
     const [user, setUser] = useState(null);
     const router = useRouter();
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
-    const { t } = useContext(LanguageContext);
+    const { t, locale } = useContext(LanguageContext);
 
     useEffect(() => {
         fetchUser();
@@ -125,15 +124,14 @@ export default function Home() {
                         {t('enjoy_seamless_transcription')}
                     </p>
                 )}
-
-                {/* Replace the “needs to be completed” part with the button below */}
-                <GoogleSignInButton
-                user={user}
-                nextUrl="/dashboard"
-                onLoginSuccess={handleLoginSuccess} // (optional) update local user state
-                >
-                    {t('start_here')}
-                </GoogleSignInButton>
+                <div className="button-container">
+                    <GoogleSignInButton
+                        className={`button button-wiggle ${locale === 'fa' ? 'font-farsi' : 'font-english'}`}
+                        nextUrl="/dashboard"
+                    >
+                        {t('start_here')}
+                    </GoogleSignInButton>
+                </div>
             </section>
         </div>
     );
