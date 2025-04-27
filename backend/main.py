@@ -305,6 +305,7 @@ async def sse_endpoint(request: Request, db: Session = Depends(get_db)):
         redis_conn = await aioredis.from_url("redis://redis:6379")
         pubsub = redis_conn.pubsub()
         await pubsub.subscribe(user_channel)
+        last_keepalive = time.time()
         try:
             while True:
                 if await request.is_disconnected():
@@ -314,8 +315,14 @@ async def sse_endpoint(request: Request, db: Session = Depends(get_db)):
                 if message and message['type'] == 'message':
                     data = message['data'].decode('utf-8')
                     yield f"data: {data}\n\n"
+                if time.time() - last_keepalive > 15:
+                    yield ": keepalive\n\n"
+                    last_keepalive = time.time()
                 await asyncio.sleep(0.1)
+        except Exception as e:
+            logger.error(f"SSE error for user {user.email}: {str(e)}")
         finally:
+            logger.info(f"SSE connection closed for user {user.email}")
             await pubsub.unsubscribe(user_channel)
             await pubsub.close()
     return StreamingResponse(event_generator(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
