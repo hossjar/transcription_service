@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: tuttypassword
       POSTGRES_DB: tuttydb
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - ../tootty_data/db_data:/var/lib/postgresql/data
   nginx:
     image: nginx:latest
     depends_on:
@@ -33,8 +33,8 @@ services:
     restart: unless-stopped
     volumes:
       - ./backend:/app
-      - uploads_data:/app/uploads
-      - ./backend/.env:/app/.env
+      - ../tootty_data/uploads_data:/app/uploads
+      
     depends_on:
       - db
       - redis
@@ -58,8 +58,7 @@ services:
     command: celery -A celery_config worker -l info --concurrency=5
     volumes:
       - ./backend:/app
-      - uploads_data:/app/uploads
-      - ./backend/.env:/app/.env
+      - ../tootty_data/uploads_data:/app/uploads
     depends_on:
       - backend
       - redis
@@ -85,10 +84,3 @@ services:
     depends_on:
       - backend
       - redis
-
-volumes:
-  frontend_next:
-  frontend_node_modules:
-  backend_env:
-  db_data:
-  uploads_data:
