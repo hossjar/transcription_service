@@ -64,6 +64,26 @@ export default function Home() {
                 </p>
             </section>
 
+            {/* CTA Section */}
+            <section className="text-center mt-16 mb-20">
+                <h2 className="text-3xl font-bold text-primary mb-4">
+                    {t('ready_to_get_started')}
+                </h2>
+                {!user && (
+                    <p className="text-lg text-gray-700 mb-6">
+                        {t('enjoy_seamless_transcription')}
+                    </p>
+                )}
+                <div className="button-container">
+                    <GoogleSignInButton
+                        className={`button button-wiggle ${locale === 'fa' ? 'font-farsi' : 'font-english'}`}
+                        nextUrl="/dashboard"
+                    >
+                        {t('start_here')}
+                    </GoogleSignInButton>
+                </div>
+            </section>
+            
             {/* Features Section */}
             <section className="mt-10">
                 <h2 className="text-3xl font-bold text-center mb-10 text-foreground">
@@ -114,25 +134,6 @@ export default function Home() {
                 </div>
             </section>
 
-            {/* CTA Section */}
-            <section className="text-center mt-16 mb-20">
-                <h2 className="text-3xl font-bold text-primary mb-4">
-                    {t('ready_to_get_started')}
-                </h2>
-                {!user && (
-                    <p className="text-lg text-gray-700 mb-6">
-                        {t('enjoy_seamless_transcription')}
-                    </p>
-                )}
-                <div className="button-container">
-                    <GoogleSignInButton
-                        className={`button button-wiggle ${locale === 'fa' ? 'font-farsi' : 'font-english'}`}
-                        nextUrl="/dashboard"
-                    >
-                        {t('start_here')}
-                    </GoogleSignInButton>
-                </div>
-            </section>
         </div>
     );
 }

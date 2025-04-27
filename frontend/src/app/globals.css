@@ -83,7 +83,8 @@ button {
 
 .button {
   position: relative;
-  color: var(--foreground);
+  color: white; /* White text by default */
+  background: var(--primary); /* Green background by default */
   text-decoration: none;
   display: inline-block;
   text-transform: uppercase;
@@ -91,18 +92,18 @@ button {
   border: 2px solid var(--primary);
   border-radius: 1000px;
   padding: 10px 20px;
-  margin: 40px;
+  margin: 20px; /* Reduced margin */
   box-shadow: 0 2px 5px 0 rgba(3,6,26,0.15);
   transition: .5s all ease-in-out;
-  background: transparent;
 }
 
 .button:hover {
   cursor: pointer;
-  background: var(--primary);
-  color: white;
-  animation: none;
+  background: white; /* White background on hover */
+  color: var(--foreground); /* Dark text on hover */
+  border-color: var(--primary); /* Consistent border */
 }
+
 
 .button-wiggle {
   animation: wiggle 4s 2s infinite;
