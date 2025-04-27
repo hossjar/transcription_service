@@ -43,7 +43,7 @@ export default function Home() {
                 } else {
                     setUser(null);
                     localStorage.removeItem('tutty_user');
-                    setIsDataLoaded(true); // Even if no user, consider data loaded
+                    setIsDataLoaded(true);
                 }
             })
             .catch(err => {
@@ -61,26 +61,27 @@ export default function Home() {
         if (user) {
             fetchFiles(currentPage);
         }
-    }, [user]);
+    }, [user, currentPage]);
 
     const { reconnect } = useSSE((data) => {
+        console.log('SSE message received:', data); // Debug log
         setFiles((prevFiles) => {
             const fileExists = prevFiles.some((f) => f.id === data.file_id);
             if (fileExists) {
                 return prevFiles.map((file) =>
                     file.id === data.file_id
-                        ? { ...file, status: data.status, message: data.message }
+                        ? { ...file, status: data.status, message: data.message, transcription: data.transcription || file.transcription }
                         : file
                 );
             } else {
+                // Add new file to the list if it's on the current page
                 fetchFiles(currentPage);
                 return prevFiles;
             }
         });
 
         if (data.status === 'transcribed' || data.status === 'error') {
-            fetchUser();
-            fetchFiles(currentPage);
+            fetchUser(); // Update user data (e.g., remaining_time)
         }
     });
 
@@ -118,6 +119,7 @@ export default function Home() {
                 setFiles([]);
             }
         } catch (err) {
+            console.error('Error fetching files:', err);
             setFiles([]);
         } finally {
             setLoading(false);
@@ -134,7 +136,7 @@ export default function Home() {
                 fetchFiles(currentPage);
             }
         } catch (err) {
-            // Silently handle error
+            console.error('Error deleting file:', err);
         }
     };
 
@@ -174,11 +176,8 @@ export default function Home() {
     const handlePageChange = (newPage) => {
         if (newPage < 1 || newPage > totalPages) return;
         setCurrentPage(newPage);
-        fetchFiles(newPage);
     };
 
-    // Show loader if still within minimum time AND data isn't loaded
-    // If data is loaded and minimum time has passed, show dashboard immediately
     if (isLoaderVisible && !isDataLoaded) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[50vh]">
