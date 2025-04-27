@@ -99,11 +99,10 @@ button {
 
 .button:hover {
   cursor: pointer;
-  background: white; /* White background on hover */
-  color: var(--foreground); /* Dark text on hover */
-  border-color: var(--primary); /* Consistent border */
+  background: white;
+  color: #000000; /* Changed to black */
+  border-color: var(--primary);
 }
-
 
 .button-wiggle {
   animation: wiggle 4s 2s infinite;
