@@ -311,12 +311,11 @@ async def sse_endpoint(request: Request, db: Session = Depends(get_db)):
         
         try:
             while True:
-                # Check if client disconnected
+                # check if the client is disconnected
                 if await request.is_disconnected():
-                    logger.info(f"User {user.email} disconnected from SSE")
+                    # Remove or downgrade this log to avoid duplication
                     break
-                
-                # Listen for Redis messages
+                # listen for redis messages
                 message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
                 if message and message['type'] == 'message':
                     data = message['data'].decode('utf-8')
@@ -326,12 +325,11 @@ async def sse_endpoint(request: Request, db: Session = Depends(get_db)):
                 if time.time() - last_keepalive >= 15:
                     yield ": keepalive\n\n"
                     last_keepalive = time.time()
-                
-                await asyncio.sleep(1)  # Small sleep to prevent tight loop
+                await asyncio.sleep(1)
         except Exception as e:
             logger.error(f"SSE error for user {user.email}: {str(e)}")
         finally:
-            logger.info(f"SSE connection closed for user {user.email}")
+            logger.debug(f"SSE connection closed for user {user.email}")  # Changed to DEBUG
             await pubsub.unsubscribe(user_channel)
             await redis_conn.close()
     
@@ -340,7 +338,7 @@ async def sse_endpoint(request: Request, db: Session = Depends(get_db)):
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
     )
-    
+        
 @app.get("/login/google")
 async def google_login():
     """Redirect to Google OAuth2 login."""
