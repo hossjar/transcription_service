@@ -66,7 +66,6 @@ IMPORTANT_ENDPOINTS = {
     ("POST", "/upload"),
     ("POST", "/payment/purchase"),
     ("GET",  "/payment/verify"),
-    ("POST", "/logout"),
 }
 
 @app.middleware("http")
@@ -147,7 +146,7 @@ async def logout(request: Request, db: Session = Depends(get_db)):
     """Log out the user and clear session."""
     user_id = request.session.get('user_id')
     if user_id:
-        user = db.query(User).filter(User.id == user_id).first()
+    #    user = db.query(User).filter(User.id == user_id).first()
     #    logger.info(f"User logging out: {user.email if user else 'unknown'}")
         activity = UserActivity(user_id=user_id, activity_type='logout', details='User logged out')
         db.add(activity)
