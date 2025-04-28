@@ -38,7 +38,17 @@ export default function useSSE(onMessage) {
 
             // Log errors but don’t close the connection
             eventSource.onerror = (error) => {
-                console.error('SSE error:', error);
+                // Only log if error has useful info
+                if (
+                    error &&
+                    (error.message || (error.target && error.target.readyState === EventSource.CLOSED))
+                ) {
+                    console.error('SSE error:', error);
+                } else {
+                    // Suppress empty or generic errors
+                    // Optionally, log at debug level if needed
+                    // console.debug('SSE error suppressed:', error);
+                }
                 // Let EventSource reconnect automatically
             };
         }
