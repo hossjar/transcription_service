@@ -5,6 +5,7 @@
 import { useState, useContext, useEffect } from 'react';
 import LanguageContext from '../context/LanguageContext';
 import Link from 'next/link';
+import { ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 
 export default function FileUpload({ onUploadComplete }) {
     const [file, setFile] = useState(null);
@@ -80,7 +81,7 @@ export default function FileUpload({ onUploadComplete }) {
                 if (data.detail === 'Insufficient transcription time. Please buy more time.') {
                     setMessage(
                         <Link href="/purchase" className="text-primary underline">
-                            {t('insufficient_transcription_time')}
+                            {t('insufficient_transcription_time') || 'Insufficient transcription time. Please buy more time.'}
                         </Link>
                     );
                 } else {
@@ -114,7 +115,7 @@ export default function FileUpload({ onUploadComplete }) {
     return (
         <div
             dir={locale === 'fa' ? 'rtl' : 'ltr'}
-            className="bg-white shadow-lg rounded-lg p-6 max-w-lg mx-auto mt-8 animate-fade-in"
+            className="bg-white shadow-lg rounded-lg p-6 max-w-4xl mx-auto mt-8 animate-fade-in"
         >
             <div className="flex items-center mb-4">
                 <svg
@@ -142,25 +143,14 @@ export default function FileUpload({ onUploadComplete }) {
             <div className="flex items-center justify-center w-full mb-4">
                 <label
                     htmlFor="file-upload"
-                    className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition"
+                    className="group flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition"
                 >
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <svg
-                            className="w-8 h-8 mb-3 text-gray-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M7 16V4M7 4l3-3M7 4l-3-3m12 15v6m-3 3l3-3m0 0l3 3"
-                            />
-                        </svg>
-                        <p className="mb-2 text-sm text-gray-500">
-                            <span className="font-semibold">{t('click_to_upload') || 'Click to upload'}</span>{' '}
+                        <ArrowUpTrayIcon className="w-8 h-8 mb-3 text-gray-400 group-hover:text-primary transition" />
+                        <p className="mb-2 text-base text-gray-700 font-medium group-hover:text-primary transition">
+                            {t('click_to_upload') || 'Click to upload'}
+                        </p>
+                        <p className="text-sm text-gray-500">
                             {t('or_drag_and_drop') || 'or drag and drop'}
                         </p>
                         <p className="text-xs text-gray-500">
@@ -180,7 +170,7 @@ export default function FileUpload({ onUploadComplete }) {
 
             {file && (
                 <p className="text-sm text-gray-600 mb-4">
-                    {t('selected_file') || 'Selected file'}: {file.name}
+                    {t('selected_file') || 'Selected file'}: <span className="truncate max-w-[200px] inline-block">{file.name}</span>
                 </p>
             )}
 
