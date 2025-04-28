@@ -1,11 +1,11 @@
-/* frontend/src/components/FileUpload.js */
+/* src/components/FileUpload.js */
 
 'use client';
 
 import { useState, useContext, useEffect } from 'react';
 import LanguageContext from '../context/LanguageContext';
 import Link from 'next/link';
-import { ArrowUpTrayIcon } from '@heroicons/react/24/outline';
+import { ArrowUpTrayIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function FileUpload({ onUploadComplete }) {
     const [file, setFile] = useState(null);
@@ -15,6 +15,7 @@ export default function FileUpload({ onUploadComplete }) {
     const [outputFormat, setOutputFormat] = useState('txt');
     const [language, setLanguage] = useState('fa');
     const [diarize, setDiarize] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
     const { t, locale } = useContext(LanguageContext);
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -24,15 +25,11 @@ export default function FileUpload({ onUploadComplete }) {
         setMessage('');
     }, [file]);
 
-    const handleFileChange = (e) => {
-        const selectedFile = e.target.files[0];
+    const validateAndSetFile = (selectedFile) => {
         if (!selectedFile) return;
-
-        // Client-side validation
         const allowedExtensions = ['wav', 'mp3', 'mp4', 'm4a', 'flac', 'aac', 'ogg'];
         const fileExtension = selectedFile.name.split('.').pop().toLowerCase();
         const maxSize = 250 * 1024 * 1024; // 250MB
-
         if (!allowedExtensions.includes(fileExtension)) {
             setMessage(t('unsupported_file_type') || 'Unsupported file type');
             setFile(null);
@@ -43,9 +40,20 @@ export default function FileUpload({ onUploadComplete }) {
             setFile(null);
             return;
         }
-
         setFile(selectedFile);
         setMessage('');
+    };
+
+    const handleFileChange = (e) => {
+        const selectedFile = e.target.files[0];
+        validateAndSetFile(selectedFile);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const droppedFile = e.dataTransfer.files[0];
+        validateAndSetFile(droppedFile);
     };
 
     const uploadFile = () => {
@@ -53,21 +61,17 @@ export default function FileUpload({ onUploadComplete }) {
             setMessage(t('please_select_a_file') || 'Please select a file');
             return;
         }
-
         setUploading(true);
         setMessage(t('uploading') || 'Uploading...');
         setProgress(0);
-
         const xhr = new XMLHttpRequest();
         xhr.open('POST', `${API_URL}/upload`, true);
-
         xhr.upload.onprogress = (event) => {
             if (event.lengthComputable) {
                 const percentComplete = (event.loaded / event.total) * 100;
                 setProgress(percentComplete);
             }
         };
-
         xhr.onload = () => {
             setUploading(false);
             if (xhr.status === 200) {
@@ -90,20 +94,17 @@ export default function FileUpload({ onUploadComplete }) {
                 setProgress(0);
             }
         };
-
         xhr.onerror = () => {
             setUploading(false);
             setMessage(t('upload_failed') || 'Upload failed');
             setProgress(0);
         };
-
         const formData = new FormData();
         formData.append('file', file);
         formData.append('output_format', outputFormat);
         formData.append('language', language);
         formData.append('tag_audio_events', 'false');
         formData.append('diarize', diarize.toString());
-
         xhr.send(formData);
     };
 
@@ -115,7 +116,7 @@ export default function FileUpload({ onUploadComplete }) {
     return (
         <div
             dir={locale === 'fa' ? 'rtl' : 'ltr'}
-            className="bg-white shadow-lg rounded-lg p-6 max-w-4xl mx-auto mt-8 animate-fade-in"
+            className="bg-white shadow-lg rounded-lg p-6 max-w-xl mx-auto mt-8 animate-fade-in"
         >
             <div className="flex items-center mb-4">
                 <svg
@@ -123,7 +124,6 @@ export default function FileUpload({ onUploadComplete }) {
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
                 >
                     <path
                         strokeLinecap="round"
@@ -140,10 +140,18 @@ export default function FileUpload({ onUploadComplete }) {
                 {t('media_file_limits') || 'Audio or video files with maximum 4 hours length and 250 MB size'}
             </p>
 
-            <div className="flex items-center justify-center w-full mb-4">
+            <div
+                onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+                className={`flex items-center justify-center w-full mb-4 border-2 border-dashed ${isDragging ? 'border-primary' : 'border-gray-300'} rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition`}
+            >
                 <label
                     htmlFor="file-upload"
-                    className="group flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition"
+                    className="flex flex-col items-center justify-center w-full h-32"
                 >
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <ArrowUpTrayIcon className="w-8 h-8 mb-3 text-gray-400 group-hover:text-primary transition" />
@@ -169,121 +177,135 @@ export default function FileUpload({ onUploadComplete }) {
             </div>
 
             {file && (
-                <p className="text-sm text-gray-600 mb-4">
-                    {t('selected_file') || 'Selected file'}: <span className="truncate max-w-[200px] inline-block">{file.name}</span>
-                </p>
+                <div className="flex items-center justify-between mb-4">
+                    <p className="text-sm text-gray-600 truncate flex-1">
+                        {t('selected_file')}: {file.name}
+                    </p>
+                    <button
+                        onClick={() => setFile(null)}
+                        className="text-red-500 hover:text-red-700 ml-2"
+                        aria-label={t('remove_file')}
+                    >
+                        <XMarkIcon className="w-5 h-5" />
+                    </button>
+                </div>
             )}
 
-            <div className="space-y-4">
-                <label className="block text-foreground">
-                    {t('language') || 'Language'}
-                    <select
-                        value={language}
-                        onChange={(e) => setLanguage(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm p-2"
-                        disabled={uploading}
-                    >
-                        <option value="fa">Persian</option>
-                        <option value="en">English</option>
-                        <option value="ar">Arabic</option>
-                        <option value="tr">Turkish</option>
-                        <option value="fr">French</option>
-                        <option value="de">German</option>
-                        <option value="ur">Urdu</option>
-                        <option value="he">Hebrew</option>
-                        <option value="es">Spanish</option>
-                        <option value="pt">Portuguese</option>
-                        <option value="ru">Russian</option>
-                        <option value="cmn">Mandarin</option>
-                        <option value="ja">Japanese</option>
-                        <option value="hi">Hindi</option>
-                        <option value="bn">Bengali</option>
-                        <option value="id">Indonesian</option>
-                        <option value="ko">Korean</option>
-                        <option value="it">Italian</option>
-                        <option value="nl">Dutch</option>
-                        <option value="pl">Polish</option>
-                        <option value="uk">Ukrainian</option>
-                        <option value="ro">Romanian</option>
-                        <option value="sv">Swedish</option>
-                        <option value="el">Greek</option>
-                        <option value="hu">Hungarian</option>
-                        <option value="cs">Czech</option>
-                        <option value="th">Thai</option>
-                        <option value="ms">Malay</option>
-                        <option value="vi">Vietnamese</option>
-                        <option value="no">Norwegian</option>
-                        <option value="fi">Finnish</option>
-                        <option value="bg">Bulgarian</option>
-                        <option value="sw">Swahili</option>
-                        <option value="et">Estonian</option>
-                        <option value="gl">Galician</option>
-                        <option value="ga">Irish</option>
-                        <option value="ug">Uyghur</option>
-                    </select>
-                </label>
-
-                <label className="block text-foreground">
-                    {t('output_format') || 'Output Format'}
-                    <select
-                        value={outputFormat}
-                        onChange={(e) => setOutputFormat(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm p-2"
-                        disabled={uploading}
-                    >
-                        <option value="txt">Text (txt)</option>
-                        <option value="srt">SubRip (srt)</option>
-                        <option value="json">JSON</option>
-                    </select>
-                </label>
-
-                <div className="flex items-center">
-                    <input
-                        type="checkbox"
-                        id="diarize"
-                        checked={diarize}
-                        onChange={(e) => setDiarize(e.target.checked)}
-                        className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                        disabled={uploading}
-                    />
-                    <label htmlFor="diarize" className="ml-2 text-sm text-foreground">
-                        {t('diarize') || 'Diarize (Speaker Identification)'}
-                    </label>
+            <div className="mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-foreground">
+                            {t('language') || 'Language'}
+                        </label>
+                        <select
+                            value={language}
+                            onChange={(e) => setLanguage(e.target.value)}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm p-2"
+                            disabled={uploading}
+                        >
+                            <option value="fa">Persian</option>
+                            <option value="en">English</option>
+                            <option value="ar">Arabic</option>
+                            <option value="tr">Turkish</option>
+                            <option value="fr">French</option>
+                            <option value="de">German</option>
+                            <option value="ur">Urdu</option>
+                            <option value="he">Hebrew</option>
+                            <option value="es">Spanish</option>
+                            <option value="pt">Portuguese</option>
+                            <option value="ru">Russian</option>
+                            <option value="cmn">Mandarin</option>
+                            <option value="ja">Japanese</option>
+                            <option value="hi">Hindi</option>
+                            <option value="bn">Bengali</option>
+                            <option value="id">Indonesian</option>
+                            <option value="ko">Korean</option>
+                            <option value="it">Italian</option>
+                            <option value="nl">Dutch</option>
+                            <option value="pl">Polish</option>
+                            <option value="uk">Ukrainian</option>
+                            <option value="ro">Romanian</option>
+                            <option value="sv">Swedish</option>
+                            <option value="el">Greek</option>
+                            <option value="hu">Hungarian</option>
+                            <option value="cs">Czech</option>
+                            <option value="th">Thai</option>
+                            <option value="ms">Malay</option>
+                            <option value="vi">Vietnamese</option>
+                            <option value="no">Norwegian</option>
+                            <option value="fi">Finnish</option>
+                            <option value="bg">Bulgarian</option>
+                            <option value="sw">Swahili</option>
+                            <option value="et">Estonian</option>
+                            <option value="gl">Galician</option>
+                            <option value="ga">Irish</option>
+                            <option value="ug">Uyghur</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-foreground">
+                            {t('output_format') || 'Output Format'}
+                        </label>
+                        <select
+                            value={outputFormat}
+                            onChange={(e) => setOutputFormat(e.target.value)}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm p-2"
+                            disabled={uploading}
+                        >
+                            <option value="txt">Text (txt)</option>
+                            <option value="srt">SubRip (srt)</option>
+                            <option value="json">JSON</option>
+                        </select>
+                    </div>
                 </div>
-
-                <button
-                    onClick={handleSubmit}
-                    className={`w-full sm:w-auto flex items-center justify-center bg-primary text-white py-2 px-4 rounded-md transition ${
-                        uploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-secondary'
-                    }`}
-                    disabled={uploading}
-                >
-                    {uploading ? (
-                        <>
-                            <svg
-                                className="animate-spin h-5 w-5 mr-3 text-white"
-                                viewBox="0 0 24 24"
-                            >
-                                <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                />
-                                <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                />
-                            </svg>
-                            {t('uploading') || 'Uploading...'}
-                        </>
-                    ) : (
-                        t('upload') || 'Upload'
-                    )}
-                </button>
+                <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-center">
+                        <input
+                            type="checkbox"
+                            id="diarize"
+                            checked={diarize}
+                            onChange={(e) => setDiarize(e.target.checked)}
+                            className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                            disabled={uploading}
+                        />
+                        <label htmlFor="diarize" className="ml-2 text-sm text-foreground">
+                            {t('diarize') || 'Diarize (Speaker Identification)'}
+                        </label>
+                    </div>
+                    <button
+                        onClick={handleSubmit}
+                        className={`w-full sm:w-auto flex items-center justify-center bg-primary text-white py-2 px-4 rounded-md transition ${
+                            uploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-secondary'
+                        }`}
+                        disabled={uploading}
+                    >
+                        {uploading ? (
+                            <>
+                                <svg
+                                    className="animate-spin h-5 w-5 mr-3 text-white"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                    />
+                                    <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    />
+                                </svg>
+                                {t('uploading') || 'Uploading...'}
+                            </>
+                        ) : (
+                            t('upload') || 'Upload'
+                        )}
+                    </button>
+                </div>
             </div>
 
             {uploading && (
@@ -300,20 +322,22 @@ export default function FileUpload({ onUploadComplete }) {
                 </div>
             )}
 
-            {message && (
-                <p
-                    className={`mt-4 text-sm ${
-                        typeof message === 'object'
-                            ? 'text-red-600'
-                            : message.toLowerCase().includes('failed') ||
-                              message.toLowerCase().includes('insufficient')
-                            ? 'text-red-600'
-                            : 'text-green-600'
-                    }`}
-                >
-                    {message}
-                </p>
-            )}
+            <div aria-live="polite" className="mt-4">
+                {message && (
+                    <p
+                        className={`text-sm ${
+                            typeof message === 'object'
+                                ? 'text-red-600'
+                                : message.toLowerCase().includes('failed') ||
+                                  message.toLowerCase().includes('insufficient')
+                                ? 'text-red-600'
+                                : 'text-green-600'
+                        }`}
+                    >
+                        {message}
+                    </p>
+                )}
+            </div>
         </div>
     );
 }
