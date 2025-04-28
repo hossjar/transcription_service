@@ -178,7 +178,7 @@ export default function Home() {
         setCurrentPage(newPage);
     };
 
-    if (isLoaderVisible && !isDataLoaded) {
+    if (isLoaderVisible || !isDataLoaded) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[50vh]">
                 <ParrotLoader />
