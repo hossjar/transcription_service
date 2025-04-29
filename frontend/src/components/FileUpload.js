@@ -116,7 +116,7 @@ export default function FileUpload({ onUploadComplete }) {
     return (
         <div
             dir={locale === 'fa' ? 'rtl' : 'ltr'}
-            className="bg-white shadow-lg rounded-lg p-6 max-w-xl mx-auto mt-8 animate-fade-in"
+            className="bg-white shadow-lg rounded-lg p-6 w-full mt-8 animate-fade-in"
         >
             <div className="flex items-center mb-4">
                 <svg
@@ -274,9 +274,7 @@ export default function FileUpload({ onUploadComplete }) {
                     </div>
                     <button
                         onClick={handleSubmit}
-                        className={`w-full sm:w-auto flex items-center justify-center bg-primary text-white py-2 px-4 rounded-md transition ${
-                            uploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-secondary'
-                        }`}
+                        className={`w-full sm:w-auto flex items-center justify-center bg-primary text-white py-2 px-4 rounded-md transition ${uploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-secondary'}`}
                         disabled={uploading}
                     >
                         {uploading ? (
@@ -325,13 +323,12 @@ export default function FileUpload({ onUploadComplete }) {
             <div aria-live="polite" className="mt-4">
                 {message && (
                     <p
-                        className={`text-sm ${
-                            typeof message === 'object'
-                                ? 'text-red-600'
-                                : message.toLowerCase().includes('failed') ||
-                                  message.toLowerCase().includes('insufficient')
-                                ? 'text-red-600'
-                                : 'text-green-600'
+                        className={`text-sm ${typeof message === 'object'
+                            ? 'text-red-600'
+                            : message.toLowerCase().includes('failed') ||
+                              message.toLowerCase().includes('insufficient')
+                            ? 'text-red-600'
+                            : 'text-green-600'
                         }`}
                     >
                         {message}
