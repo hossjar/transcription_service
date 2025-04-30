@@ -78,5 +78,5 @@
     "tag_audio_events": "Tag Audio Events",
     "diarize": "Speaker Detection",
     "upload_media":"Upload Media",
-    "media_file_limits":"Audio or Video files, Max 1GB and 2 hours"
+    "media_file_limits":"Audio or Video files, Max 250 MB and 4 hours"
     }

@@ -156,13 +156,13 @@ export default function FileUpload({ onUploadComplete }) {
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <ArrowUpTrayIcon className="w-8 h-8 mb-3 text-gray-400 group-hover:text-primary transition" />
                         <p className="mb-2 text-base text-gray-700 font-medium group-hover:text-primary transition">
-                            {t('click_to_upload') || 'Click to upload'}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                            {t('or_drag_and_drop') || 'or drag and drop'}
+                           click to upload
                         </p>
                         <p className="text-xs text-gray-500">
-                            {t('supported_file_types') || 'Audio or video files (max. 250MB)'}
+                            mp3, wav, m4a, flac, aac, ogg
+                        </p>
+                        <p className="text-xs text-gray-500">
+                            mp4, avi, mov, wmv, flv, mpg, mpeg
                         </p>
                     </div>
                     <input
@@ -194,7 +194,7 @@ export default function FileUpload({ onUploadComplete }) {
             <div className="mt-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-foreground">
+                        <label className="block text-base font-semibold text-foreground">
                             {t('language') || 'Language'}
                         </label>
                         <select
@@ -243,7 +243,7 @@ export default function FileUpload({ onUploadComplete }) {
                         </select>
                     </div>
                     <div>
-                        <label className="block text-foreground">
+                        <label className="block text-base font-semibold text-foreground">
                             {t('output_format') || 'Output Format'}
                         </label>
                         <select
@@ -268,7 +268,7 @@ export default function FileUpload({ onUploadComplete }) {
                             className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                             disabled={uploading}
                         />
-                        <label htmlFor="diarize" className="ml-2 text-sm text-foreground">
+                        <label htmlFor="diarize" className="ml-2 text-base font-semibold text-foreground">
                             {t('diarize') || 'Diarize (Speaker Identification)'}
                         </label>
                     </div>
