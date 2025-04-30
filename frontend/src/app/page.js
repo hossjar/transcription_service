@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import LanguageContext from '../context/LanguageContext';
 import GoogleSignInButton from '@/components/GoogleSignInButton';
+import DevLogin from '@/components/DevLogin'; // Import DevLogin component
 
 export default function Home() {
     const [user, setUser] = useState(null);
@@ -82,6 +83,11 @@ export default function Home() {
                         {t('start_here')}
                     </GoogleSignInButton>
                 </div>
+                {process.env.NODE_ENV === 'development' && (
+                    <div className="mt-4">
+                        <DevLogin />
+                    </div>
+                )}
             </section>
             
             {/* Features Section */}
@@ -133,7 +139,6 @@ export default function Home() {
                     </div>
                 </div>
             </section>
-
         </div>
     );
 }

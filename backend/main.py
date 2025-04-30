@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import os
 import uuid
 from sqlalchemy import text
-from fastapi import FastAPI, Request, Depends, HTTPException, status, UploadFile, File, Form, Query
+from fastapi import FastAPI, Request, Depends, HTTPException, status, UploadFile, File, Form, Query, APIRouter
 import requests
 from fastapi.responses import RedirectResponse, JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,17 +24,24 @@ import redis.asyncio as aioredis
 import asyncio
 import redis
 
+SESSION_COOKIE_SAMESITE = os.getenv('SESSION_COOKIE_SAMESITE', 'lax')
+SESSION_COOKIE_HTTPS_ONLY = os.getenv('SESSION_COOKIE_HTTPS_ONLY', 'false').lower() == 'true'
+
+
 app = FastAPI()
 app.include_router(admin_router)
 app.include_router(payment_router)
+# Create a router for development routes
+dev_router = APIRouter()
+app.include_router(dev_router)
 
 # Session Middleware
 app.add_middleware(
     SessionMiddleware,
     secret_key=os.getenv('SECRET_KEY'),
     session_cookie='session',
-    same_site='none',
-    https_only=True,
+    same_site=SESSION_COOKIE_SAMESITE,
+    https_only=SESSION_COOKIE_HTTPS_ONLY,
     max_age=90000,
 )
 
@@ -42,11 +49,12 @@ app.add_middleware(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost",
+        "http://localhost:3000",
         "http://127.0.0.1",
         "http://frontend",
         "https://tootty.com",
         "https://www.tootty.com"
+        "http://test.tootty.com:81"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -91,6 +99,33 @@ class GoogleAuthToken(BaseModel):
     id_token: str
     next_url: str = '/dashboard'
 
+if os.getenv('APP_ENV') == 'development':
+    @app.post("/auth/dev-login")
+    async def dev_login(request: Request, email: str = Form(...), db: Session = Depends(get_db)):
+        """
+        Development-only endpoint to log in a user by email without OAuth.
+        """
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            logger.error(f"Dev login failed: User with email {email} not found")
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Set user session
+        request.session['user_id'] = user.id
+        
+        # Log the activity
+        activity = UserActivity(
+            user_id=user.id,
+            activity_type='login',
+            details='User logged in via development mode',
+            timestamp=datetime.utcnow()
+        )
+        db.add(activity)
+        db.commit()
+        
+        logger.info(f"Dev login successful for user: {email} (ID: {user.id})")
+        return {"detail": "Logged in successfully", "user_id": user.id}
+        
 @app.post("/auth/google")
 async def auth_google(token: GoogleAuthToken, request: Request, db: Session = Depends(get_db)):
     """Authenticate user via Google ID token."""
