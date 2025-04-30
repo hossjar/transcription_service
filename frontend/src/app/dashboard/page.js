@@ -8,8 +8,9 @@ import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid';
 import LanguageContext from '../../context/LanguageContext';
 import Link from 'next/link';
 import ParrotLoader from '../../components/ParrotLoader';
+import DevLogin from '../../components/DevLogin'; // Import DevLogin component
 
-export default function Home() {
+export default function Dashboard() { // Renamed from Home to Dashboard for clarity
     const [user, setUser] = useState(null);
     const [files, setFiles] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -202,6 +203,11 @@ export default function Home() {
                 >
                     Login with Google
                 </a>
+                {process.env.NODE_ENV === 'development' && (
+                    <div className="mt-4">
+                        <DevLogin />
+                    </div>
+                )}
             </div>
         );
     }

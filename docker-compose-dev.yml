@@ -28,8 +28,13 @@ services:
   backend:
     build:
       context: ./backend
+      dockerfile: Dockerfile.dev
     environment:
       TZ: Asia/Tehran
+      BASE_URL: http://test.tootty.com:81
+      APP_ENV: development
+      SESSION_COOKIE_SAMESITE: lax
+      SESSION_COOKIE_HTTPS_ONLY: false
     restart: unless-stopped
     volumes:
       - ./backend:/app
@@ -70,11 +75,12 @@ services:
       context: ./frontend
       args:
         NEXT_PUBLIC_API_URL: /api
-        NEXT_PUBLIC_GOOGLE_CLIENT_ID: 201837583381-o18ot139ujp2rscl6a0pgo6l4uik5jnc.apps.googleusercontent.com
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: 912769466891-b6rbvu0ep9lugk2dk3htrokgsae0oqo2.apps.googleusercontent.com
+
     environment:
       TZ: Asia/Tehran
       NEXT_PUBLIC_API_URL: /api
-      NEXT_PUBLIC_GOOGLE_CLIENT_ID: 201837583381-o18ot139ujp2rscl6a0pgo6l4uik5jnc.apps.googleusercontent.com
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: 912769466891-b6rbvu0ep9lugk2dk3htrokgsae0oqo2.apps.googleusercontent.com
       WATCHPACK_POLLING: "true"
     volumes:
       - ./frontend:/app
