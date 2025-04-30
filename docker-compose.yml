@@ -72,6 +72,7 @@ services:
         NEXT_PUBLIC_API_URL: /api
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: 201837583381-o18ot139ujp2rscl6a0pgo6l4uik5jnc.apps.googleusercontent.com
     environment:
+      NODE_ENV: production
       TZ: Asia/Tehran
       NEXT_PUBLIC_API_URL: /api
       NEXT_PUBLIC_GOOGLE_CLIENT_ID: 201837583381-o18ot139ujp2rscl6a0pgo6l4uik5jnc.apps.googleusercontent.com
@@ -80,7 +81,6 @@ services:
       - ./frontend:/app
       - /app/node_modules
       - /app/.next
-    command: ${CMD:-"npm start"}
     depends_on:
       - backend
       - redis
