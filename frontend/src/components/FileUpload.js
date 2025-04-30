@@ -156,7 +156,7 @@ export default function FileUpload({ onUploadComplete }) {
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <ArrowUpTrayIcon className="w-8 h-8 mb-3 text-gray-400 group-hover:text-primary transition" />
                         <p className="mb-2 text-base text-gray-700 font-medium group-hover:text-primary transition">
-                           click to upload
+                           click to select a media-file
                         </p>
                         <p className="text-xs text-gray-500">
                             mp3, wav, m4a, flac, aac, ogg
