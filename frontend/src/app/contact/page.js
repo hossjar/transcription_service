@@ -15,8 +15,8 @@ export default function Contact() {
     const contactMethods = [
         {
             id: 'phone_whatsapp_telegram',
-            label: locale === 'fa' ? 'تماس:' : 'Contact:',
-            identifier: '+989335622283',
+            label: locale === 'fa' ? 'تماس' : 'Contact',
+            identifier: '09335622283',
             icons: [
                 <PhoneIcon key="phone" className="h-6 w-6 text-green-500" />,
                 <FaWhatsapp key="whatsapp" className="h-6 w-6 text-green-500" />,
