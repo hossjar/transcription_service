@@ -203,7 +203,8 @@ async def read_me(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
         return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": "Not authenticated"})
-    if user.expiration_date and datetime.now(timezone.utc) > user.expiration_date:
+    current_time = datetime.utcnow()  # Use naive datetime in UTC
+    if user.expiration_date and current_time > user.expiration_date:
         user.remaining_time = 0
         db.commit()
     return {
@@ -212,10 +213,9 @@ async def read_me(request: Request, db: Session = Depends(get_db)):
         "name": user.name,
         "picture": user.picture,
         "remaining_time": user.remaining_time,
-        "expiration_date": user.expiration_date_aware.isoformat() if user.expiration_date_aware else None,
+        "expiration_date": user.expiration_date.isoformat() if user.expiration_date else None,
         "is_admin": user.is_admin
     }
-
 
 @app.get("/")
 async def read_root():
