@@ -137,7 +137,7 @@ export default function PurchasePage() {
                             {t(plan.hoursKey)}
                         </p>
                         <p className="text-sm text-gray-600 mb-2">
-                            {locale === "fa" ? "در یک ماه" : "for a month"}
+                            {locale === "fa" ? "برای یک ماه" : "for a month"}
                         </p>
                         <p className="text-2xl font-bold text-gray-800 mb-4">
                             {formatNumber(plan.price, locale)}{" "}
