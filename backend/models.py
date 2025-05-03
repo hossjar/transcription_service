@@ -3,7 +3,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, Float, Boolean, JSON, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from database import Base
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 class User(Base):
@@ -25,6 +25,12 @@ class User(Base):
     files = relationship("UploadedFile", back_populates="user")
     activities = relationship("UserActivity", back_populates="user")
     payment_transactions = relationship("PaymentTransaction", back_populates="user")
+
+    @property
+    def expiration_date_aware(self):
+        if self.expiration_date:
+            return self.expiration_date.replace(tzinfo=timezone.utc)
+        return None
 
 class UploadedFile(Base):
     __tablename__ = 'uploaded_files'

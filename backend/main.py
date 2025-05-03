@@ -212,7 +212,7 @@ async def read_me(request: Request, db: Session = Depends(get_db)):
         "name": user.name,
         "picture": user.picture,
         "remaining_time": user.remaining_time,
-        "expiration_date": user.expiration_date.isoformat() if user.expiration_date else None,
+        "expiration_date": user.expiration_date_aware.isoformat() if user.expiration_date_aware else None,
         "is_admin": user.is_admin
     }
 
@@ -269,7 +269,7 @@ async def upload_file(
             logger.error(f"Invalid media duration for {file.filename}")
             raise HTTPException(status_code=400, detail="Could not determine media duration")
         media_duration_minutes = media_duration / 60
-        if user.expiration_date and datetime.now(timezone.utc) > user.expiration_date:
+        if user.expiration_date_aware and datetime.now(timezone.utc) > user.expiration_date_aware:
             user.remaining_time = 0
             db.commit()
         if user.remaining_time <= 0 or user.remaining_time < media_duration_minutes:
