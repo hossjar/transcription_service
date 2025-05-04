@@ -221,11 +221,24 @@ export default function Dashboard() { // Renamed from Home to Dashboard for clar
                         <p className="text-lg">
                             <strong>{t('remaining_time')}</strong>{' '}
                             {Math.floor(user.remaining_time)} {t('minutes')}
-                            {user.expiration_date && (
-                                <span className="text-sm text-gray-500 ml-2">
-                                    (Expires on {new Date(user.expiration_date).toLocaleDateString()})
-                                </span>
-                            )}
+                            {user.expiration_date && (() => {
+                                const exp = new Date(user.expiration_date);
+                                const now = new Date();
+                                // Format date in local time and language
+                                const formattedDate = exp.toLocaleDateString(
+                                    (typeof window !== "undefined" && window.navigator.language) || (t && t("lang_code")) || "en",
+                                    { year: "numeric", month: "long", day: "numeric" }
+                                );
+                                const days = Math.max(0, Math.ceil((exp - now) / (1000 * 60 * 60 * 24)));
+                                return (
+                                    <span className="text-sm text-gray-500 ml-2">
+                                        {t("expires_on")}: {formattedDate}
+                                        {days > 0 && (
+                                            <> – {t("days_remaining", { days })}</>
+                                        )}
+                                    </span>
+                                );
+                            })()}
                         </p>
                         {user.remaining_time === 0 && (
                             <p className="text-red-500 text-sm">
