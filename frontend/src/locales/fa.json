@@ -60,6 +60,8 @@
     "buy_more_time": "افزایش اعتبار",
     "redirecting_to_dashboard_in_5_sec": "Redirecting to dashboard in 5 seconds...",
     "go_now": "Go Now",
+    "expires_on": "تاریخ اعتبار",
+    "days_remaining": "{{days}} روز باقی مانده",
     "ideal_for_quick_projects": "مناسب برای شروع",
     "best_value_for_medium": "ارزنده برای پروژه های متوسط",
     "for_heavy_use_cases": "برای کاربران پرمصرف",
