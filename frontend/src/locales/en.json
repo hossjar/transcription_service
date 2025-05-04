@@ -60,6 +60,8 @@
     "buy_more_time": "Buy More Time",
     "redirecting_to_dashboard_in_5_sec": "Redirecting to dashboard in 5 seconds...",
     "go_now": "Go Now",
+    "expires_on": "Expires on",
+    "days_remaining": "{{days}} days remaining",
     "ideal_for_quick_projects": "Ideal for quick projects",
     "best_value_for_medium": "Best value for medium projects",
     "for_heavy_use_cases": "For heavy use cases",
