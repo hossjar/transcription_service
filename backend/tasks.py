@@ -12,6 +12,7 @@ import models
 from elevenlabs.client import ElevenLabs
 from io import BytesIO
 from sqlalchemy import update, func  # Added for atomic updates
+from httpx import Timeout
 
 redis_client = redis.Redis(host='redis', port=6379, db=0)
 
@@ -132,7 +133,7 @@ def convert_transcription_to_format(transcription, output_format):
 @celery_app.task(
     bind=True,
     default_retry_delay=60,
-    max_retries=8,
+    max_retries=3,  # Reduced from 8 to limit retries
     retry_backoff=True,
     retry_jitter=True,
     task_time_limit=7200  # 2 hours max runtime
@@ -151,6 +152,12 @@ def transcribe_file(self, file_id: int, output_format: str, language: str, tag_a
         user = db.query(models.User).filter(models.User.id == user_id).first()
         user_email = user.email if user else "unknown"
         redis_channel = f"user_{user_id}_updates"
+
+        # Idempotency Check: Skip if already transcribed
+        if uploaded_file.status == 'transcribed':
+            logger.info(f"[transcribe_file] File already transcribed. file_id={file_id}, user_id={user_id}, user_email={user_email}")
+            redis_client.publish(redis_channel, json.dumps({"file_id": file_id, "status": "transcribed", "message": "Transcription already completed."}))
+            return
 
         logger.info(f"[transcribe_file] Starting transcription. file_id={file_id}, user_id={user_id}, user_email={user_email}, output_format={output_format}, language={language}, tag_audio_events={tag_audio_events}, diarize={diarize}")
         redis_client.publish(redis_channel, json.dumps({"file_id": file_id, "status": "processing", "message": "Transcription job started."}))
@@ -199,10 +206,16 @@ def transcribe_file(self, file_id: int, output_format: str, language: str, tag_a
                 redis_client.publish(redis_channel, json.dumps({"file_id": file_id, "status": "error", "message": "Failed to extract audio from video file."}))
                 return
 
+        # Dynamic Timeout: Base timeout + 2x media duration (in seconds)
+        media_duration = uploaded_file.media_duration or get_media_duration(uploaded_file.filepath)
+        timeout_seconds = max(180, media_duration / 20)  # Minimum 5 minutes, or 2x duration
+        client = ElevenLabs(api_key=api_key, timeout=Timeout(timeout=timeout_seconds, connect=10.0))
+        logger.info(f"[transcribe_file] Set timeout to {timeout_seconds} seconds for file_id={file_id}")
+
         # Map language to ElevenLabs codes
         ELEVENLABS_LANGUAGE_MAP = {'fa': 'fas', 'en': 'eng', 'ar': 'ara', 'tr': 'tur', 'fr': 'fra'}
         mapped_language = ELEVENLABS_LANGUAGE_MAP.get(language, language)
-        client = ElevenLabs(api_key=api_key)
+
         with open(uploaded_file.filepath, 'rb') as file_stream:
             transcription = client.speech_to_text.convert(
                 file=file_stream,

@@ -37,7 +37,7 @@ celery_app.conf.update(
     
     # Worker settings
     worker_max_tasks_per_child=50,  # Restart worker after 50 tasks
-    worker_concurrency=2,  # Number of worker processes
+    worker_concurrency=5,  # Number of worker processes
     
     # Result backend settings
     result_expires=24000,  # Results expire after about 6 hours
@@ -45,7 +45,7 @@ celery_app.conf.update(
     # Broker settings
     broker_connection_retry_on_startup=True,
     broker_connection_max_retries=10,
-    broker_connection_timeout=30,
+    broker_connection_timeout=90,
     
     # Task acknowledgment
     task_acks_late=True,  # Tasks are acknowledged after completion
