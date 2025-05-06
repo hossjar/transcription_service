@@ -47,6 +47,7 @@ class UploadedFile(Base):
     output_format = Column(String, default='txt')
     language = Column(String, default='fa')
     media_duration = Column(Integer, default=0)  # Duration in seconds
+    summary = Column(Text, nullable=True)  #  for summary
 
     user = relationship("User", back_populates="files")
 

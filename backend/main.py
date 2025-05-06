@@ -23,6 +23,7 @@ from logging_config import logger
 import redis.asyncio as aioredis
 import asyncio
 import redis
+from openai import OpenAI
 
 SESSION_COOKIE_SAMESITE = os.getenv('SESSION_COOKIE_SAMESITE', 'lax')
 SESSION_COOKIE_HTTPS_ONLY = os.getenv('SESSION_COOKIE_HTTPS_ONLY', 'false').lower() == 'true'
@@ -292,22 +293,79 @@ async def upload_file(
         if 'file_location' in locals() and os.path.exists(file_location):
             os.remove(file_location)
         raise HTTPException(status_code=500, detail=str(e))
+
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
+def generate_summary(text):
+    """Generate a summary using OpenAI GPT-4."""
+    response = client.chat.completions.create(
+        model="gpt-4.1",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are an expert summarizer and keyword extractor. Your tasks are:\n1. To provide a concise, coherent summary of the input text.\n2. To extract a list of the most important keywords or key phrases that capture the main ideas.\n\nImportant instructions:\n- The summary should not exceed 200 words.\n- The summary should be written in the same language as the input text.\n- The list of keywords must also be in the same language and, if possible, reflect phrases exactly as they appear in the text.\n- Focus on preserving the meaning and the key details without adding any extra information."
+            },
+            {
+                "role": "user",
+                "content": f"input Text:\n\"\"\"\n{text}\n\"\"\""
+            }
+        ],
+        max_tokens=350,
+        temperature=0.2,
+    )
+    return response.choices[0].message.content.strip()
+
+@app.post("/files/{file_id}/summarize")
+async def summarize_file(file_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    """Generate and store a summary for a transcribed file."""
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    file = db.query(UploadedFile).filter(UploadedFile.id == file_id, UploadedFile.user_id == current_user.id).first()
+    if not file:
+        raise HTTPException(status_code=404, detail="File not found")
+    if file.status != 'transcribed':
+        raise HTTPException(status_code=400, detail="File is not transcribed yet")
+    if file.summary:
+        return {"summary": file.summary}
+    try:
+        summary = generate_summary(file.transcription)
+        file.summary = summary
+        db.commit()
+        logger.info(f"Summary generated for file_id={file_id} by user_id={current_user.id}")
+        return {"summary": summary}
+    except Exception as e:
+        logger.error(f"Error generating summary for file_id={file_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate summary")
+
+
     
-@app.get("/files")
+@app.get("/files")  # Updated existing endpoint
 async def get_user_files(request: Request, db: Session = Depends(get_db), limit: int = Query(10, ge=1, le=100), offset: int = Query(0, ge=0)):
-    """List user's uploaded files."""
+    """List user's uploaded files including summaries."""
     user = get_current_user(request, db)
     if not user:
-        logger.warning("Unauthorized attempt to list files.")
         raise HTTPException(status_code=401, detail="Not authenticated")
-    query = db.query(models.UploadedFile).filter(models.UploadedFile.user_id == user.id)
+    query = db.query(UploadedFile).filter(UploadedFile.user_id == user.id)
     total = query.count()
-    files = query.order_by(models.UploadedFile.upload_time.desc()).limit(limit).offset(offset).all()
+    files = query.order_by(UploadedFile.upload_time.desc()).limit(limit).offset(offset).all()
     return {
         "total": total,
-        "files": [{"id": f.id, "user_id": f.user_id, "filename": f.filename, "filepath": f.filepath, "upload_time": f.upload_time.isoformat(),
-                   "status": f.status, "transcription": f.transcription, "transcription_job_id": f.transcription_job_id,
-                   "output_format": f.output_format, "language": f.language, "media_duration": f.media_duration} for f in files]
+        "files": [
+            {
+                "id": f.id,
+                "user_id": f.user_id,
+                "filename": f.filename,
+                "filepath": f.filepath,
+                "upload_time": f.upload_time.isoformat(),
+                "status": f.status,
+                "transcription": f.transcription,
+                "transcription_job_id": f.transcription_job_id,
+                "output_format": f.output_format,
+                "language": f.language,
+                "media_duration": f.media_duration,
+                "summary": f.summary  # Include summary in response
+            } for f in files
+        ]
     }
 
 @app.delete("/files/{file_id}")

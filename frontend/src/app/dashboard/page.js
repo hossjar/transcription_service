@@ -8,9 +8,9 @@ import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid';
 import LanguageContext from '../../context/LanguageContext';
 import Link from 'next/link';
 import ParrotLoader from '../../components/ParrotLoader';
-import DevLogin from '../../components/DevLogin'; // Import DevLogin component
+import DevLogin from '../../components/DevLogin';
 
-export default function Dashboard() { // Renamed from Home to Dashboard for clarity
+export default function Dashboard() {
     const [user, setUser] = useState(null);
     const [files, setFiles] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -19,20 +19,19 @@ export default function Dashboard() { // Renamed from Home to Dashboard for clar
     const [isLoaderVisible, setIsLoaderVisible] = useState(true);
     const [isDataLoaded, setIsDataLoaded] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [expandedFiles, setExpandedFiles] = useState({});
+    const [expandedTranscriptions, setExpandedTranscriptions] = useState({});
+    const [expandedSummaries, setExpandedSummaries] = useState({});
+    const [summarizingFiles, setSummarizingFiles] = useState({}); // New state
     const { t } = useContext(LanguageContext);
     const router = useRouter();
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
     useEffect(() => {
-        const minLoaderTime = 3000; // 3 seconds
-
-        // Start a timer for the minimum loader display time
+        const minLoaderTime = 3000;
         const timer = setTimeout(() => {
             setIsLoaderVisible(false);
         }, minLoaderTime);
 
-        // Fetch user data
         fetch(`${API_URL}/me`, { credentials: 'include' })
             .then(res => {
                 if (res.ok) {
@@ -54,7 +53,6 @@ export default function Dashboard() { // Renamed from Home to Dashboard for clar
                 setIsDataLoaded(true);
             });
 
-        // Cleanup timer on unmount
         return () => clearTimeout(timer);
     }, []);
 
@@ -65,7 +63,7 @@ export default function Dashboard() { // Renamed from Home to Dashboard for clar
     }, [user, currentPage]);
 
     const { reconnect } = useSSE((data) => {
-        console.log('SSE message received:', data); // Debug log
+        console.log('SSE message received:', data);
         setFiles((prevFiles) => {
             const fileExists = prevFiles.some((f) => f.id === data.file_id);
             if (fileExists) {
@@ -75,14 +73,12 @@ export default function Dashboard() { // Renamed from Home to Dashboard for clar
                         : file
                 );
             } else {
-                // Add new file to the list if it's on the current page
                 fetchFiles(currentPage);
                 return prevFiles;
             }
         });
-
         if (data.status === 'transcribed' || data.status === 'error') {
-            fetchUser(); // Update user data (e.g., remaining_time)
+            fetchUser();
         }
     });
 
@@ -141,13 +137,14 @@ export default function Dashboard() { // Renamed from Home to Dashboard for clar
         }
     };
 
-    const handleDownload = (file) => {
-        if (!file.transcription) return;
+    const handleDownload = (file, type) => {
+        const text = type === 'summary' ? file.summary : file.transcription;
+        if (!text) return;
         const extension = file.output_format === 'srt' ? 'srt' : 'txt';
-        const bom = '\uFEFF'; // UTF-8 Byte Order Mark
-        const blob = new Blob([bom + file.transcription], { type: 'text/plain;charset=utf-8' });
+        const bom = '\uFEFF';
+        const blob = new Blob([bom + text], { type: 'text/plain;charset=utf-8' });
         const link = document.createElement('a');
-        link.download = `${file.filename}_transcription.${extension}`;
+        link.download = `${file.filename}_${type}.${extension}`;
         link.href = window.URL.createObjectURL(blob);
         document.body.appendChild(link);
         link.click();
@@ -155,23 +152,55 @@ export default function Dashboard() { // Renamed from Home to Dashboard for clar
         window.URL.revokeObjectURL(link.href);
     };
 
-    const handleCopy = async (transcription) => {
-        if (!transcription) return;
+    const handleCopy = async (text) => {
+        if (!text) return;
         try {
-            await navigator.clipboard.writeText(transcription);
-            alert('Transcription copied to clipboard!');
+            await navigator.clipboard.writeText(text);
+            alert('Text copied to clipboard!');
         } catch (err) {
-            alert('Failed to copy transcription.');
+            alert('Failed to copy text.');
         }
     };
 
     const toggleTranscription = (fileId) => {
-        setExpandedFiles((prev) => ({
+        setExpandedTranscriptions((prev) => ({
             ...prev,
             [fileId]: !prev[fileId],
         }));
     };
 
+    const toggleSummary = (fileId) => {
+        setExpandedSummaries((prev) => ({
+            ...prev,
+            [fileId]: !prev[fileId],
+        }));
+    };
+
+const generateSummary = async (fileId) => {
+        try {
+            setSummarizingFiles((prev) => ({ ...prev, [fileId]: true }));
+            const res = await fetch(`${API_URL}/files/${fileId}/summarize`, {
+                method: 'POST',
+                credentials: 'include',
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setFiles((prevFiles) =>
+                    prevFiles.map((file) =>
+                        file.id === fileId ? { ...file, summary: data.summary } : file
+                    )
+                );
+            } else {
+                alert('Failed to generate summary');
+            }
+        } catch (err) {
+            console.error('Error generating summary:', err);
+            alert('Error generating summary');
+        } finally {
+            setSummarizingFiles((prev) => ({ ...prev, [fileId]: false }));
+        }
+    };
+    
     const totalPages = Math.ceil(totalFiles / filesPerPage);
 
     const handlePageChange = (newPage) => {
@@ -257,9 +286,7 @@ export default function Dashboard() { // Renamed from Home to Dashboard for clar
                     />
                 )}
             </div>
-
             <FileUpload onUploadComplete={() => fetchFiles(currentPage)} />
-
             {loading ? (
                 <p className="mt-8">Loading files...</p>
             ) : files.length > 0 ? (
@@ -296,35 +323,25 @@ export default function Dashboard() { // Renamed from Home to Dashboard for clar
                                             <p className="text-sm text-gray-500">{file.message}</p>
                                         )}
                                     </div>
-                                    <div className="md:w-1/2 md:flex md:justify-end md:items-center space-x-2">
-                                        {file.transcription && (
-                                            <>
-                                                <button
-                                                    onClick={() => handleDownload(file)}
-                                                    className="bg-secondary hover:bg-primary text-white py-1 px-3 rounded-md transition-colors"
-                                                >
-                                                    Download
-                                                </button>
-                                                <button
-                                                    onClick={() => handleCopy(file.transcription)}
-                                                    className="bg-accent hover:bg-primary text-white py-1 px-3 rounded-md transition-colors"
-                                                >
-                                                    Copy
-                                                </button>
-                                            </>
-                                        )}
-                                        <button
-                                            onClick={() => handleDelete(file.id)}
-                                            className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md transition-colors"
-                                        >
-                                            Delete
-                                        </button>
-                                        {file.transcription && (
+                                    <div className="md:w-1/2 md:flex md:justify-end md:items-center space-x-2 flex-wrap">
+                                        {file.transcription && (<>
+                                            <button
+                                                onClick={() => handleDownload(file, 'transcription')}
+                                                className="bg-secondary hover:bg-primary text-white py-1 px-3 rounded-md transition-colors m-1"
+                                            >
+                                                Download
+                                            </button>
+                                            <button
+                                                onClick={() => handleCopy(file.transcription)}
+                                                className="bg-accent hover:bg-primary text-white py-1 px-3 rounded-md transition-colors m-1"
+                                            >
+                                                Copy
+                                            </button>
                                             <button
                                                 onClick={() => toggleTranscription(file.id)}
-                                                className="bg-gray-500 hover:bg-gray-600 text-white py-1 px-3 rounded-md flex items-center transition-colors"
+                                                className="bg-gray-500 hover:bg-gray-600 text-white py-1 px-3 rounded-md flex items-center transition-colors m-1"
                                             >
-                                                {expandedFiles[file.id] ? (
+                                                {expandedTranscriptions[file.id] ? (
                                                     <>
                                                         <EyeSlashIcon className="w-5 h-5 mr-1" />
                                                         Hide
@@ -336,21 +353,101 @@ export default function Dashboard() { // Renamed from Home to Dashboard for clar
                                                     </>
                                                 )}
                                             </button>
+                                        </>
+                                    )}
+                                    <button
+                                        onClick={() => handleDelete(file.id)}
+                                        className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md transition-colors m-1"
+                                    >
+                                        Delete
+                                    </button>
+                                    {file.status === 'transcribed' && (
+                                        file.summary ? (
+                                            <button
+                                                onClick={() => toggleSummary(file.id)}
+                                                className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded-md flex items-center transition-colors m-1"
+                                            >
+                                                {expandedSummaries[file.id] ? (
+                                                    <>
+                                                        <EyeSlashIcon className="w-5 h-5 mr-1" />
+                                                        Hide Summary
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <EyeIcon className="w-5 h-5 mr-1" />
+                                                        View Summary
+                                                    </>
+                                                )}
+                                            </button>
+                                        ) : summarizingFiles[file.id] ? (
+                                            <div className="flex items-center text-gray-500 m-1">
+                                                <svg
+                                                    className="animate-spin h-5 w-5 mr-2"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <circle
+                                                        className="opacity-25"
+                                                        cx="12"
+                                                        cy="12"
+                                                        r="10"
+                                                        stroke="currentColor"
+                                                        strokeWidth="4"
+                                                    />
+                                                    <path
+                                                        className="opacity-75"
+                                                        fill="currentColor"
+                                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                    />
+                                                </svg>
+                                                Generating summary...
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => generateSummary(file.id)}
+                                                className="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded-md transition-colors m-1"
+                                            >
+                                                Summarize
+                                                </button>
+                                            )
                                         )}
                                     </div>
                                 </div>
-                                {file.transcription && (
+                                {expandedTranscriptions[file.id] && file.transcription && (
                                     <div
                                         className={`transition-all duration-300 overflow-y-auto ${
-                                            expandedFiles[file.id]
-                                                ? 'max-h-96 opacity-100 mt-4'
-                                                : 'max-h-0 opacity-0'
+                                            expandedTranscriptions[file.id] ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0'
                                         } bg-gray-100 p-4 rounded-md`}
                                     >
                                         <h3 className="font-semibold mb-2">Transcription:</h3>
                                         <p className="whitespace-pre-wrap text-gray-800">
                                             {file.transcription}
                                         </p>
+                                    </div>
+                                )}
+                                {expandedSummaries[file.id] && file.summary && (
+                                    <div
+                                        className={`transition-all duration-300 overflow-y-auto ${
+                                            expandedSummaries[file.id] ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0'
+                                        } bg-blue-100 p-4 rounded-md`}
+                                    >
+                                        <h3 className="font-semibold mb-2">Summary:</h3>
+                                        <p className="whitespace-pre-wrap text-gray-800">
+                                            {file.summary}
+                                        </p>
+                                        <div className="mt-2 flex space-x-2">
+                                            <button
+                                                onClick={() => handleDownload(file, 'summary')}
+                                                className="bg-secondary hover:bg-primary text-white py-1 px-3 rounded-md transition-colors"
+                                            >
+                                                Download Summary
+                                            </button>
+                                            <button
+                                                onClick={() => handleCopy(file.summary)}
+                                                className="bg-accent hover:bg-primary text-white py-1 px-3 rounded-md transition-colors"
+                                            >
+                                                Copy Summary
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                             </li>
