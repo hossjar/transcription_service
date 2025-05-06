@@ -21,10 +21,12 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(false);
     const [expandedTranscriptions, setExpandedTranscriptions] = useState({});
     const [expandedSummaries, setExpandedSummaries] = useState({});
-    const [summarizingFiles, setSummarizingFiles] = useState({}); // New state
+    const [summarizingFiles, setSummarizingFiles] = useState({}); // State for files being summarized
+    const [shortTranscriptions, setShortTranscriptions] = useState({}); // New state for tracking too-short transcriptions
     const { t } = useContext(LanguageContext);
     const router = useRouter();
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
+    const MIN_WORDS_FOR_SUMMARY = 350; // Minimum word count for summarization
 
     useEffect(() => {
         const minLoaderTime = 3000;
@@ -176,7 +178,31 @@ export default function Dashboard() {
         }));
     };
 
-const generateSummary = async (fileId) => {
+    // Function to count words in transcription
+    const countWords = (text) => {
+        if (!text) return 0;
+        // Split by whitespace and filter out empty strings
+        return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+    };
+
+    const generateSummary = async (fileId) => {
+        const file = files.find(f => f.id === fileId);
+        if (!file || !file.transcription) return;
+        
+        // Count words in the transcription
+        const wordCount = countWords(file.transcription);
+        
+        // Check if transcription is long enough for summarization
+        if (wordCount < MIN_WORDS_FOR_SUMMARY) {
+            // Mark this file as having a too-short transcription
+            setShortTranscriptions(prev => ({ ...prev, [fileId]: true }));
+            // Clear the flag after 5 seconds
+            setTimeout(() => {
+                setShortTranscriptions(prev => ({ ...prev, [fileId]: false }));
+            }, 5000);
+            return;
+        }
+        
         try {
             setSummarizingFiles((prev) => ({ ...prev, [fileId]: true }));
             const res = await fetch(`${API_URL}/files/${fileId}/summarize`, {
@@ -324,92 +350,96 @@ const generateSummary = async (fileId) => {
                                         )}
                                     </div>
                                     <div className="md:w-1/2 md:flex md:justify-end md:items-center space-x-2 flex-wrap">
-                                        {file.transcription && (<>
-                                            <button
-                                                onClick={() => handleDownload(file, 'transcription')}
-                                                className="bg-secondary hover:bg-primary text-white py-1 px-3 rounded-md transition-colors m-1"
-                                            >
-                                                Download
-                                            </button>
-                                            <button
-                                                onClick={() => handleCopy(file.transcription)}
-                                                className="bg-accent hover:bg-primary text-white py-1 px-3 rounded-md transition-colors m-1"
-                                            >
-                                                Copy
-                                            </button>
-                                            <button
-                                                onClick={() => toggleTranscription(file.id)}
-                                                className="bg-gray-500 hover:bg-gray-600 text-white py-1 px-3 rounded-md flex items-center transition-colors m-1"
-                                            >
-                                                {expandedTranscriptions[file.id] ? (
-                                                    <>
-                                                        <EyeSlashIcon className="w-5 h-5 mr-1" />
-                                                        Hide
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <EyeIcon className="w-5 h-5 mr-1" />
-                                                        View
-                                                    </>
-                                                )}
-                                            </button>
-                                        </>
-                                    )}
-                                    <button
-                                        onClick={() => handleDelete(file.id)}
-                                        className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md transition-colors m-1"
-                                    >
-                                        Delete
-                                    </button>
-                                    {file.status === 'transcribed' && (
-                                        file.summary ? (
-                                            <button
-                                                onClick={() => toggleSummary(file.id)}
-                                                className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded-md flex items-center transition-colors m-1"
-                                            >
-                                                {expandedSummaries[file.id] ? (
-                                                    <>
-                                                        <EyeSlashIcon className="w-5 h-5 mr-1" />
-                                                        Hide Summary
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <EyeIcon className="w-5 h-5 mr-1" />
-                                                        View Summary
-                                                    </>
-                                                )}
-                                            </button>
-                                        ) : summarizingFiles[file.id] ? (
-                                            <div className="flex items-center text-gray-500 m-1">
-                                                <svg
-                                                    className="animate-spin h-5 w-5 mr-2"
-                                                    viewBox="0 0 24 24"
+                                        {file.transcription && (
+                                            <>
+                                                <button
+                                                    onClick={() => handleDownload(file, 'transcription')}
+                                                    className="bg-secondary hover:bg-primary text-white py-1 px-3 rounded-md transition-colors m-1"
                                                 >
-                                                    <circle
-                                                        className="opacity-25"
-                                                        cx="12"
-                                                        cy="12"
-                                                        r="10"
-                                                        stroke="currentColor"
-                                                        strokeWidth="4"
-                                                    />
-                                                    <path
-                                                        className="opacity-75"
-                                                        fill="currentColor"
-                                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                                    />
-                                                </svg>
-                                                Generating summary...
-                                            </div>
-                                        ) : (
-                                            <button
-                                                onClick={() => generateSummary(file.id)}
-                                                className="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded-md transition-colors m-1"
-                                            >
-                                                Summarize
+                                                    Download
                                                 </button>
-                                            )
+                                                <button
+                                                    onClick={() => handleCopy(file.transcription)}
+                                                    className="bg-accent hover:bg-primary text-white py-1 px-3 rounded-md transition-colors m-1"
+                                                >
+                                                    Copy
+                                                </button>
+                                                <button
+                                                    onClick={() => toggleTranscription(file.id)}
+                                                    className="bg-gray-500 hover:bg-gray-600 text-white py-1 px-3 rounded-md flex items-center transition-colors m-1"
+                                                >
+                                                    {expandedTranscriptions[file.id] ? (
+                                                        <>
+                                                            <EyeSlashIcon className="w-5 h-5 mr-1" />
+                                                            Hide
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <EyeIcon className="w-5 h-5 mr-1" />
+                                                            View
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </>
                                         )}
+                                        <button
+                                            onClick={() => handleDelete(file.id)}
+                                            className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md transition-colors m-1"
+                                        >
+                                            Delete
+                                        </button>
+                                        {file.status === 'transcribed' && file.output_format !== 'json' && (
+                                            file.summary ? (
+                                                <button
+                                                    onClick={() => toggleSummary(file.id)}
+                                                    className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded-md flex items-center transition-colors m-1"
+                                                >
+                                                    {expandedSummaries[file.id] ? (
+                                                        <>
+                                                            <EyeSlashIcon className="w-5 h-5 mr-1" />
+                                                            Hide Summary
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <EyeIcon className="w-5 h-5 mr-1" />
+                                                            View Summary
+                                                        </>
+                                                    )}
+                                                </button>
+                                            ) : summarizingFiles[file.id] ? (
+                                                <div className="flex items-center text-gray-500 m-1">
+                                                    <svg
+                                                        className="animate-spin h-5 w-5 mr-2"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <circle
+                                                            className="opacity-25"
+                                                            cx="12"
+                                                            cy="12"
+                                                            r="10"
+                                                            stroke="currentColor"
+                                                            strokeWidth="4"
+                                                        />
+                                                        <path
+                                                            className="opacity-75"
+                                                            fill="currentColor"
+                                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                        />
+                                                    </svg>
+                                                    Generating summary...
+                                                </div>
+                                            ) : shortTranscriptions[file.id] ? (
+                                                <div className="text-yellow-600 m-1 px-3 py-1 bg-yellow-100 rounded-md">
+                                                    {t('transcription_too_short') || 'Transcription too short for summary (min 350 words)'}
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => generateSummary(file.id)}
+                                                    className="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded-md transition-colors m-1"
+                                                >
+                                                    Summarize
+                                                </button>
+                                        ))}
                                     </div>
                                 </div>
                                 {expandedTranscriptions[file.id] && file.transcription && (
