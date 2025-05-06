@@ -81,5 +81,6 @@
     "diarize": "Speaker Detection",
     "upload_media":"Upload Media",
     "media_file_limits":"Audio or Video files, Max 250 MB and 4 hours",
-    "transcription_too_short": "Too short for summary (min 350 words)"
+    "transcription_too_short": "Too short for summary (min 350 words)",
+    "summarization_feature_message": "Summarization feature available only for Text and Subrip formats"
     }
