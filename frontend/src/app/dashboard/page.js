@@ -67,18 +67,33 @@ export default function Dashboard() {
     const { reconnect } = useSSE((data) => {
         console.log('SSE message received:', data);
         setFiles((prevFiles) => {
-            const fileExists = prevFiles.some((f) => f.id === data.file_id);
-            if (fileExists) {
-                return prevFiles.map((file) =>
-                    file.id === data.file_id
-                        ? { ...file, status: data.status, message: data.message, transcription: data.transcription || file.transcription }
-                        : file
-                );
-            } else {
-                fetchFiles(currentPage);
-                return prevFiles;
+            const fileIndex = prevFiles.findIndex((f) => f.id === data.file_id);
+            if (fileIndex !== -1) {
+                // Update only the relevant file
+                const updatedFiles = [...prevFiles];
+                updatedFiles[fileIndex] = {
+                    ...updatedFiles[fileIndex],
+                    status: data.status,
+                    message: data.message,
+                    transcription: data.transcription || updatedFiles[fileIndex].transcription,
+                };
+                return updatedFiles;
+            } else if (data.file_id && data.status) {
+                // Optionally, append new file if it appears (rare, but possible)
+                return [
+                    ...prevFiles,
+                    {
+                        id: data.file_id,
+                        status: data.status,
+                        message: data.message,
+                        transcription: data.transcription || '',
+                        // Add other minimal fields if needed
+                    },
+                ];
             }
+            return prevFiles;
         });
+        // Only fetch user info if job is completed or failed (remaining time may have changed)
         if (data.status === 'transcribed' || data.status === 'error') {
             fetchUser();
         }
