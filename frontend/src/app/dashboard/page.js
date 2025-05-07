@@ -21,12 +21,12 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(false);
     const [expandedTranscriptions, setExpandedTranscriptions] = useState({});
     const [expandedSummaries, setExpandedSummaries] = useState({});
-    const [summarizingFiles, setSummarizingFiles] = useState({}); // State for files being summarized
-    const [shortTranscriptions, setShortTranscriptions] = useState({}); // New state for tracking too-short transcriptions
+    const [summarizingFiles, setSummarizingFiles] = useState({});
+    const [shortTranscriptions, setShortTranscriptions] = useState({});
     const { t } = useContext(LanguageContext);
     const router = useRouter();
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
-    const MIN_WORDS_FOR_SUMMARY = 350; // Minimum word count for summarization
+    const MIN_WORDS_FOR_SUMMARY = 350;
 
     useEffect(() => {
         const minLoaderTime = 3000;
@@ -158,9 +158,9 @@ export default function Dashboard() {
         if (!text) return;
         try {
             await navigator.clipboard.writeText(text);
-            alert('Text copied to clipboard!');
+            alert(t('copied_to_clipboard') || 'Text copied to clipboard!');
         } catch (err) {
-            alert('Failed to copy text.');
+            alert(t('copy_failed') || 'Failed to copy text.');
         }
     };
 
@@ -178,10 +178,8 @@ export default function Dashboard() {
         }));
     };
 
-    // Function to count words in transcription
     const countWords = (text) => {
         if (!text) return 0;
-        // Split by whitespace and filter out empty strings
         return text.trim().split(/\s+/).filter(word => word.length > 0).length;
     };
 
@@ -189,14 +187,10 @@ export default function Dashboard() {
         const file = files.find(f => f.id === fileId);
         if (!file || !file.transcription) return;
         
-        // Count words in the transcription
         const wordCount = countWords(file.transcription);
         
-        // Check if transcription is long enough for summarization
         if (wordCount < MIN_WORDS_FOR_SUMMARY) {
-            // Mark this file as having a too-short transcription
             setShortTranscriptions(prev => ({ ...prev, [fileId]: true }));
-            // Clear the flag after 5 seconds
             setTimeout(() => {
                 setShortTranscriptions(prev => ({ ...prev, [fileId]: false }));
             }, 5000);
@@ -216,12 +210,13 @@ export default function Dashboard() {
                         file.id === fileId ? { ...file, summary: data.summary } : file
                     )
                 );
+                setExpandedSummaries((prev) => ({ ...prev, [fileId]: true }));
             } else {
-                alert('Failed to generate summary');
+                alert(t('summary_failed') || 'Failed to generate summary');
             }
         } catch (err) {
             console.error('Error generating summary:', err);
-            alert('Error generating summary');
+            alert(t('summary_error') || 'Error generating summary');
         } finally {
             setSummarizingFiles((prev) => ({ ...prev, [fileId]: false }));
         }
@@ -238,7 +233,7 @@ export default function Dashboard() {
         return (
             <div className="flex flex-col items-center justify-center min-h-[50vh]">
                 <ParrotLoader />
-                <p className="mt-4 text-xl font-semibold">Loading dashboard</p>
+                <p className="mt-4 text-xl font-semibold">Loading Dashboard</p>
             </div>
         );
     }
@@ -247,16 +242,16 @@ export default function Dashboard() {
         return (
             <div className="text-center mt-20">
                 <h1 className="text-4xl font-extrabold mb-4">
-                    Welcome to <span className="text-primary">Tootty</span>
+                    {t('welcome_to') || 'Welcome to'} <span className="text-primary">Tootty</span>
                 </h1>
                 <p className="text-lg mb-8">
-                    Transcribe your media files easily and quickly.
+                    {t('transcribe_media') || 'Transcribe your media files easily and quickly.'}
                 </p>
                 <a
                     href={`${API_URL}/login`}
                     className="bg-primary hover:bg-secondary text-white py-3 px-6 rounded-md text-lg font-medium"
                 >
-                    Login with Google
+                    {t('login_with_google') || 'Login with Google'}
                 </a>
                 {process.env.NODE_ENV === 'development' && (
                     <div className="mt-4">
@@ -314,7 +309,7 @@ export default function Dashboard() {
             </div>
             <FileUpload onUploadComplete={() => fetchFiles(currentPage)} />
             {loading ? (
-                <p className="mt-8">Loading files...</p>
+                <p className="mt-8">{t('loading_files') || 'Loading files...'}</p>
             ) : files.length > 0 ? (
                 <div>
                     <h2 className="text-xl md:text-2xl font-bold mt-8">
@@ -332,18 +327,17 @@ export default function Dashboard() {
                                             {file.filename}
                                         </p>
                                         <p className="text-sm text-gray-500">
-                                            Uploaded: {new Date(file.upload_time).toLocaleString()}
+                                            {t('uploaded') || 'Uploaded'}: {new Date(file.upload_time).toLocaleString()}
                                         </p>
                                         <p
-                                            className={`mt-2 ${
-                                                file.status === 'transcribed'
-                                                    ? 'text-green-600'
-                                                    : file.status === 'error'
-                                                    ? 'text-red-600'
-                                                    : 'text-yellow-600'
+                                            className={`mt-2 ${file.status === 'transcribed'
+                                                ? 'text-green-600'
+                                                : file.status === 'error'
+                                                ? 'text-red-600'
+                                                : 'text-yellow-600'
                                             }`}
                                         >
-                                            Status: {file.status}
+                                            {t(`status_${file.status.toLowerCase()}`) || `Status: ${file.status}`}
                                         </p>
                                         {file.message && (
                                             <p className="text-sm text-gray-500">{file.message}</p>
@@ -356,13 +350,13 @@ export default function Dashboard() {
                                                     onClick={() => handleDownload(file, 'transcription')}
                                                     className="bg-secondary hover:bg-primary text-white py-1 px-3 rounded-md transition-colors m-1"
                                                 >
-                                                    Download
+                                                    {t('download') || 'Download'}
                                                 </button>
                                                 <button
                                                     onClick={() => handleCopy(file.transcription)}
                                                     className="bg-accent hover:bg-primary text-white py-1 px-3 rounded-md transition-colors m-1"
                                                 >
-                                                    Copy
+                                                    {t('copy') || 'Copy'}
                                                 </button>
                                                 <button
                                                     onClick={() => toggleTranscription(file.id)}
@@ -371,12 +365,12 @@ export default function Dashboard() {
                                                     {expandedTranscriptions[file.id] ? (
                                                         <>
                                                             <EyeSlashIcon className="w-5 h-5 mr-1" />
-                                                            Hide
+                                                            {t('hide') || 'Hide'}
                                                         </>
                                                     ) : (
                                                         <>
                                                             <EyeIcon className="w-5 h-5 mr-1" />
-                                                            View
+                                                            {t('view') || 'View'}
                                                         </>
                                                     )}
                                                 </button>
@@ -386,7 +380,7 @@ export default function Dashboard() {
                                             onClick={() => handleDelete(file.id)}
                                             className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md transition-colors m-1"
                                         >
-                                            Delete
+                                            {t('delete') || 'Delete'}
                                         </button>
                                         {file.status === 'transcribed' && file.output_format !== 'json' && (
                                             file.summary ? (
@@ -397,12 +391,12 @@ export default function Dashboard() {
                                                     {expandedSummaries[file.id] ? (
                                                         <>
                                                             <EyeSlashIcon className="w-5 h-5 mr-1" />
-                                                            Hide Summary
+                                                            {t('hide_summary') || 'Hide Summary'}
                                                         </>
                                                     ) : (
                                                         <>
                                                             <EyeIcon className="w-5 h-5 mr-1" />
-                                                            View Summary
+                                                            {t('view_summary') || 'View Summary'}
                                                         </>
                                                     )}
                                                 </button>
@@ -426,7 +420,7 @@ export default function Dashboard() {
                                                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                                         />
                                                     </svg>
-                                                    Generating summary...
+                                                    {t('generating_summary') || 'Generating summary...'}
                                                 </div>
                                             ) : shortTranscriptions[file.id] ? (
                                                 <div className="text-yellow-600 m-1 px-3 py-1 bg-yellow-100 rounded-md">
@@ -437,18 +431,16 @@ export default function Dashboard() {
                                                     onClick={() => generateSummary(file.id)}
                                                     className="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded-md transition-colors m-1"
                                                 >
-                                                    Summarize
+                                                    {t('summarize') || 'Summarize'}
                                                 </button>
                                         ))}
                                     </div>
                                 </div>
                                 {expandedTranscriptions[file.id] && file.transcription && (
                                     <div
-                                        className={`transition-all duration-300 overflow-y-auto ${
-                                            expandedTranscriptions[file.id] ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0'
-                                        } bg-gray-100 p-4 rounded-md`}
+                                        className={`transition-all duration-300 overflow-y-auto ${expandedTranscriptions[file.id] ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0'} bg-gray-100 p-4 rounded-md`}
                                     >
-                                        <h3 className="font-semibold mb-2">Transcription:</h3>
+                                        <h3 className="font-semibold mb-2">{t('transcription') || 'Transcription'}:</h3>
                                         <p className="whitespace-pre-wrap text-gray-800">
                                             {file.transcription}
                                         </p>
@@ -456,11 +448,9 @@ export default function Dashboard() {
                                 )}
                                 {expandedSummaries[file.id] && file.summary && (
                                     <div
-                                        className={`transition-all duration-300 overflow-y-auto ${
-                                            expandedSummaries[file.id] ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0'
-                                        } bg-blue-100 p-4 rounded-md`}
+                                        className={`transition-all duration-300 overflow-y-auto ${expandedSummaries[file.id] ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0'} bg-blue-100 p-4 rounded-md`}
                                     >
-                                        <h3 className="font-semibold mb-2">Summary:</h3>
+                                        <h3 className="font-semibold mb-2">{t('summary') || 'Summary'}:</h3>
                                         <p className="whitespace-pre-wrap text-gray-800">
                                             {file.summary}
                                         </p>
@@ -469,13 +459,13 @@ export default function Dashboard() {
                                                 onClick={() => handleDownload(file, 'summary')}
                                                 className="bg-secondary hover:bg-primary text-white py-1 px-3 rounded-md transition-colors"
                                             >
-                                                Download Summary
+                                                {t('download_summary') || 'Download Summary'}
                                             </button>
                                             <button
                                                 onClick={() => handleCopy(file.summary)}
                                                 className="bg-accent hover:bg-primary text-white py-1 px-3 rounded-md transition-colors"
                                             >
-                                                Copy Summary
+                                                {t('copy_summary') || 'Copy Summary'}
                                             </button>
                                         </div>
                                     </div>
@@ -488,33 +478,25 @@ export default function Dashboard() {
                             <button
                                 onClick={() => handlePageChange(currentPage - 1)}
                                 disabled={currentPage === 1}
-                                className={`py-2 px-4 rounded-md ${
-                                    currentPage === 1
-                                        ? 'bg-gray-300 cursor-not-allowed'
-                                        : 'bg-primary text-white hover:bg-secondary'
-                                }`}
+                                className={`py-2 px-4 rounded-md ${currentPage === 1 ? 'bg-gray-300 cursor-not-allowed' : 'bg-primary text-white hover:bg-secondary'}`}
                             >
-                                Previous
+                                {t('previous') || 'Previous'}
                             </button>
                             <span>
-                                Page {currentPage} of {totalPages}
+                                {t('page_of', { current: currentPage, total: totalPages }) || `Page ${currentPage} of ${totalPages}`}
                             </span>
                             <button
                                 onClick={() => handlePageChange(currentPage + 1)}
                                 disabled={currentPage === totalPages}
-                                className={`py-2 px-4 rounded-md ${
-                                    currentPage === totalPages
-                                        ? 'bg-gray-300 cursor-not-allowed'
-                                        : 'bg-primary text-white hover:bg-secondary'
-                                }`}
+                                className={`py-2 px-4 rounded-md ${currentPage === totalPages ? 'bg-gray-300 cursor-not-allowed' : 'bg-primary text-white hover:bg-secondary'}`}
                             >
-                                Next
+                                {t('next') || 'Next'}
                             </button>
                         </div>
                     )}
                 </div>
             ) : (
-                <p className="mt-8">You have not uploaded any files yet.</p>
+                <p className="mt-8">{t('no_files_uploaded') || 'You have not uploaded any files yet.'}</p>
             )}
         </div>
     );

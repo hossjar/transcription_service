@@ -19,7 +19,6 @@ export default function FileUpload({ onUploadComplete }) {
     const { t, locale } = useContext(LanguageContext);
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-    // Reset progress when component mounts or file changes
     useEffect(() => {
         setProgress(0);
         setMessage('');
@@ -118,20 +117,7 @@ export default function FileUpload({ onUploadComplete }) {
             dir={locale === 'fa' ? 'rtl' : 'ltr'}
             className="bg-white shadow-lg rounded-lg p-6 w-full mt-8 animate-fade-in"
         >
-            <div className="flex items-center mb-4">
-                <svg
-                    className="w-6 h-6 text-primary mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                    />
-                </svg>
+            <div className="mb-4">
                 <h2 className="text-2xl font-bold text-foreground">
                     {t('upload_media') || 'Upload Media'}
                 </h2>
@@ -156,7 +142,7 @@ export default function FileUpload({ onUploadComplete }) {
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <ArrowUpTrayIcon className="w-8 h-8 mb-3 text-gray-400 group-hover:text-primary transition" />
                         <p className="mb-2 text-base text-gray-700 font-medium group-hover:text-primary transition">
-                           click to select a media-file
+                            {t('click_to_select') || 'Click to select a media file'}
                         </p>
                         <p className="text-xs text-gray-500">
                             mp3, wav, m4a, flac, aac, ogg
@@ -177,8 +163,8 @@ export default function FileUpload({ onUploadComplete }) {
             </div>
 
             {file && (
-                <div className="flex items-center justify-between mb-4">
-                    <p className="text-sm text-gray-600 truncate flex-1">
+                <div className="flex items-center justify-between mb-4 bg-gray-100 p-3 rounded-md">
+                    <p className="text-base text-gray-800 font-medium truncate flex-1">
                         {t('selected_file')}: {file.name}
                     </p>
                     <button
@@ -186,7 +172,7 @@ export default function FileUpload({ onUploadComplete }) {
                         className="text-red-500 hover:text-red-700 ml-2"
                         aria-label={t('remove_file')}
                     >
-                        <XMarkIcon className="w-5 h-5" />
+                        <XMarkIcon className="w-6 h-6" />
                     </button>
                 </div>
             )}
@@ -256,23 +242,25 @@ export default function FileUpload({ onUploadComplete }) {
                             <option value="srt">SubRip (srt)</option>
                             <option value="json">JSON</option>
                         </select>
-                        <p className="mb-2 text-base text-gray-700 small flex items-center">
-                            <svg
-                                className="w-4 h-4 mr-1"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                                xmlns="http://www.w3.org/2000/svg"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                            </svg>
-                            {t('summarization_feature_message')}
-                        </p>
+                        {outputFormat === 'json' && (
+                            <p className="mt-2 text-base text-gray-700 small flex items-center">
+                                <svg
+                                    className="w-4 h-4 mr-1"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                </svg>
+                                {t('summarization_feature_message')}
+                            </p>
+                        )}
                     </div>
                 </div>
                 <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
