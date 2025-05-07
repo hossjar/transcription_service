@@ -478,17 +478,22 @@ export default function Dashboard() {
                             <button
                                 onClick={() => handlePageChange(currentPage - 1)}
                                 disabled={currentPage === 1}
-                                className={`py-2 px-4 rounded-md ${currentPage === 1 ? 'bg-gray-300 cursor-not-allowed' : 'bg-primary text-white hover:bg-secondary'}`}
+                                className={`py-2 px-4 rounded-md ${
+                                    currentPage === 1 ? 'bg-gray-300 cursor-not-allowed' : 'bg-primary text-white hover:bg-secondary'
+                                }`}
                             >
                                 {t('previous') || 'Previous'}
                             </button>
                             <span>
-                                {t('page_of', { current: currentPage, total: totalPages }) || `Page ${currentPage} of ${totalPages}`}
+                                {t('page_of', { currentPage: currentPage, totalPages: totalPages }) ||
+                                    `Page ${currentPage} of ${totalPages}`}
                             </span>
                             <button
                                 onClick={() => handlePageChange(currentPage + 1)}
                                 disabled={currentPage === totalPages}
-                                className={`py-2 px-4 rounded-md ${currentPage === totalPages ? 'bg-gray-300 cursor-not-allowed' : 'bg-primary text-white hover:bg-secondary'}`}
+                                className={`py-2 px-4 rounded-md ${
+                                    currentPage === totalPages ? 'bg-gray-300 cursor-not-allowed' : 'bg-primary text-white hover:bg-secondary'
+                                }`}
                             >
                                 {t('next') || 'Next'}
                             </button>
