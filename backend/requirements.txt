@@ -37,3 +37,4 @@ google-auth-oauthlib===1.2.1
 elevenlabs==1.52.0
 concurrent-log-handler==0.9.25
 openai==1.75.0
+slowapi==0.1.9

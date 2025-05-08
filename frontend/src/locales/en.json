@@ -104,5 +104,6 @@
   "copied_to_clipboard": "Text copied to clipboard!",
   "copy_failed": "Failed to copy text.",
   "summary_failed": "Failed to generate summary",
-  "summary_error": "Error generating summary"
+  "summary_error": "Error generating summary",
+  "selected_file": "selected file"
     }

@@ -24,6 +24,8 @@ import redis.asyncio as aioredis
 import asyncio
 import redis
 from openai import OpenAI
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 SESSION_COOKIE_SAMESITE = os.getenv('SESSION_COOKIE_SAMESITE', 'lax')
 SESSION_COOKIE_HTTPS_ONLY = os.getenv('SESSION_COOKIE_HTTPS_ONLY', 'false').lower() == 'true'
@@ -54,7 +56,7 @@ app.add_middleware(
         "http://127.0.0.1",
         "http://frontend",
         "https://tootty.com",
-        "https://www.tootty.com"
+        "https://www.tootty.com",
         "http://test.tootty.com:81"
     ],
     allow_credentials=True,
@@ -76,6 +78,9 @@ IMPORTANT_ENDPOINTS = {
     ("POST", "/payment/purchase"),
     ("GET",  "/payment/verify"),
 }
+
+limiter = Limiter(key_func=lambda request: request.session.get('user_id', get_remote_address(request)))
+app.state.limiter = limiter
 
 @app.middleware("http")
 async def selective_perf_log(request: Request, call_next):
@@ -237,6 +242,7 @@ ALLOWED_VIDEO_EXTENSIONS = ["mp4", "avi", "mkv", "mov", "wmv", "webm", "flv", "m
 ALLOWED_EXTENSIONS = ALLOWED_AUDIO_EXTENSIONS + ALLOWED_VIDEO_EXTENSIONS
 
 @app.post("/upload")
+@limiter.limit("3/minute")
 async def upload_file(
     request: Request,
     file: UploadFile = File(...),
