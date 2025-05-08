@@ -104,5 +104,6 @@
   "copied_to_clipboard": "متن به کلیپ‌بورد کپی شد!",
   "copy_failed": "کپی کردن متن ناموفق بود.",
   "summary_failed": "تولید خلاصه ناموفق بود",
-  "summary_error": "خطا در تولید خلاصه"
+  "summary_error": "خطا در تولید خلاصه",
+  "selected_file": "فایل انتخاب شده"
     }
