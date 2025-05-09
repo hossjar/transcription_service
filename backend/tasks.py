@@ -249,7 +249,11 @@ def transcribe_file(self, file_id: int, output_format: str, language: str, tag_a
         logger.exception(f"[transcribe_file] Error transcribing file_id={file_id}: {e}")
         uploaded_file.status = 'error'
         db.commit()
-        redis_client.publish(redis_channel, json.dumps({"file_id": file_id, "status": "error", "message": f"Transcription failed: {str(e)}"}))
+        redis_client.publish(redis_channel, json.dumps({
+            "file_id": file_id,
+            "status": "error",
+            "message": "Transcription failed due to an internal error."
+        }))
         if isinstance(e, Exception):
             self.retry(exc=e)
     finally:

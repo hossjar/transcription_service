@@ -195,7 +195,13 @@ async def logout(request: Request, db: Session = Depends(get_db)):
     request.session.pop('user_id', None)
     return JSONResponse(status_code=200, content={"detail": "Logged out successfully"})
 
-
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.exception(f"Unhandled exception: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error. Please try again later."}
+    )
 
 @app.get("/health")
 async def health_check():
@@ -298,7 +304,7 @@ async def upload_file(
         logger.exception(f"Upload error: {e}")
         if 'file_location' in locals() and os.path.exists(file_location):
             os.remove(file_location)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An error occurred while uploading the file. Please try again.")
 
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
