@@ -322,7 +322,11 @@ def generate_summary(text):
     return response.choices[0].message.content.strip()
 
 @app.post("/files/{file_id}/summarize")
-async def summarize_file(file_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+@limiter.limit("5/minute")
+async def summarize_file(file_id: int,
+                         request: Request,
+                         db: Session = Depends(get_db),
+                         current_user=Depends(get_current_user)):
     """Generate and store a summary for a transcribed file."""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
