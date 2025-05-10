@@ -8,7 +8,6 @@ from enum import Enum
 
 class User(Base):
     __tablename__ = 'users'
-
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     name = Column(String, nullable=False)
@@ -21,7 +20,6 @@ class User(Base):
     last_login = Column(DateTime, nullable=True)
     is_admin = Column(Boolean, default=False)
     expiration_date = Column(DateTime, nullable=True)  # New field for expiration
-
     files = relationship("UploadedFile", back_populates="user")
     activities = relationship("UserActivity", back_populates="user")
     payment_transactions = relationship("PaymentTransaction", back_populates="user")
@@ -34,7 +32,6 @@ class User(Base):
 
 class UploadedFile(Base):
     __tablename__ = 'uploaded_files'
-
     id = Column(Integer, primary_key=True, index=True)
     is_video = Column(Boolean, default=False)
     user_id = Column(Integer, ForeignKey('users.id'))
@@ -47,40 +44,31 @@ class UploadedFile(Base):
     output_format = Column(String, default='txt')
     language = Column(String, default='fa')
     media_duration = Column(Integer, default=0)  # Duration in seconds
-    summary = Column(Text, nullable=True)  #  for summary
-
+    summary = Column(Text, nullable=True)  # for summary
     user = relationship("User", back_populates="files")
 
 class UserActivity(Base):
     __tablename__ = 'user_activities'
-
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     activity_type = Column(String, nullable=False)  # e.g., 'signup', 'login', 'logout'
     timestamp = Column(DateTime, default=datetime.utcnow)
     details = Column(String, nullable=True)
-
     user = relationship("User", back_populates="activities")
-    
+
 class AdminUser(Base):
     __tablename__ = 'admin_users'
-
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    # Add other necessary fields
-
     user = relationship("User")
-    # Define relationships as needed
 
 class AdminActivity(Base):
     __tablename__ = 'admin_activities'
-
     id = Column(Integer, primary_key=True, index=True)
     admin_user_id = Column(Integer, ForeignKey('admin_users.id'), nullable=False)
     activity_type = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
     details = Column(String, nullable=True)
-
     admin_user = relationship("AdminUser")
 
 class PaymentStatus(str, Enum):
@@ -91,7 +79,6 @@ class PaymentStatus(str, Enum):
 
 class PaymentTransaction(Base):
     __tablename__ = 'payment_transactions'
-
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     amount = Column(Float, nullable=False)  # Amount in Tomans
@@ -101,6 +88,28 @@ class PaymentTransaction(Base):
     reference_id = Column(String, nullable=True)  # Zarinpal reference ID after successful payment
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Relationship with User model
+    discount_code_id = Column(Integer, ForeignKey('discount_codes.id'), nullable=True)
     user = relationship("User", back_populates="payment_transactions")
+    discount_code = relationship("DiscountCode")
+
+class DiscountCode(Base):
+    __tablename__ = 'discount_codes'
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String, unique=True, index=True, nullable=False)
+    discount_percent = Column(Float, nullable=False)
+    max_discount_amount = Column(Float, nullable=False)
+    total_usage_limit = Column(Integer, nullable=False)
+    times_used = Column(Integer, default=0)
+    expiration_date = Column(DateTime, nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    usages = relationship("DiscountUsage", back_populates="discount_code")
+
+class DiscountUsage(Base):
+    __tablename__ = 'discount_usages'
+    id = Column(Integer, primary_key=True, index=True)
+    discount_code_id = Column(Integer, ForeignKey('discount_codes.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    used_at = Column(DateTime, default=datetime.utcnow)
+    discount_code = relationship("DiscountCode", back_populates="usages")
+    user = relationship("User")
