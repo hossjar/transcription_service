@@ -7,16 +7,11 @@ import models
 from sqlalchemy import func
 from database import get_db
 from dependencies import get_current_user
-from schemas import User as UserSchema, UserListResponse, UploadedFile as UploadedFileSchema, UserActivity as UserActivitySchema, UpdateTimeRequest
+from schemas import User as UserSchema, UserListResponse, UploadedFile as UploadedFileSchema, UserActivity as UserActivitySchema, UpdateTimeRequest, DiscountCode, DiscountCodeCreate, DiscountCodeUpdate
 from datetime import datetime
-from pydantic import BaseModel
 
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
-class UpdateTimeRequest(BaseModel):
-    amount: float
-
-# Dependency to check if the current user is admin
 def get_admin_user(request: Request, db: Session = Depends(get_db)) -> models.User:
     user = get_current_user(request, db)
     if not user:
@@ -29,38 +24,26 @@ def get_admin_user(request: Request, db: Session = Depends(get_db)) -> models.Us
 def list_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), admin_user: models.User = Depends(get_admin_user)):
     total_users = db.query(func.count(models.User.id)).scalar()
     users = db.query(models.User).offset(skip).limit(limit).all()
-
     user_list = []
     for user in users:
-        # Number of successful jobs
         successful_jobs = db.query(models.UploadedFile).filter(
             models.UploadedFile.user_id == user.id,
             models.UploadedFile.status == 'transcribed'
         ).count()
-
-        # Number of unsuccessful (failed) jobs
         unsuccessful_jobs = db.query(models.UploadedFile).filter(
             models.UploadedFile.user_id == user.id,
             models.UploadedFile.status.in_(['error', 'failed'])
         ).count()
-
-        # Total successful transcription duration (in seconds)
         total_duration_seconds = db.query(func.sum(models.UploadedFile.media_duration)).filter(
             models.UploadedFile.user_id == user.id,
             models.UploadedFile.status == 'transcribed'
         ).scalar() or 0
-
-        # Convert to minutes
         total_duration_minutes = total_duration_seconds / 60.0
-
-        # Last login date
         last_login_activity = db.query(models.UserActivity).filter(
             models.UserActivity.user_id == user.id,
             models.UserActivity.activity_type == 'login'
         ).order_by(models.UserActivity.timestamp.desc()).first()
         last_login = last_login_activity.timestamp if last_login_activity else None
-
-        # Create a user schema instance with the additional fields
         user_schema = UserSchema(
             id=user.id,
             email=user.email,
@@ -71,7 +54,6 @@ def list_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), a
             expiration_date=user.expiration_date,
             successful_jobs=successful_jobs,
             failed_jobs=unsuccessful_jobs,
-            # We store minutes into total_used_time:
             total_used_time=total_duration_minutes,
             last_login=last_login
         )
@@ -110,9 +92,6 @@ def update_user_time(
 
 @admin_router.get("/users/{user_id}/stats")
 def get_user_stats(user_id: int, db: Session = Depends(get_db), admin_user: models.User = Depends(get_admin_user)):
-    """
-    Get user's total completed transcription duration.
-    """
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -121,3 +100,58 @@ def get_user_stats(user_id: int, db: Session = Depends(get_db), admin_user: mode
         models.UploadedFile.status == 'transcribed'
     ).scalar() or 0
     return {"user_id": user.id, "total_completed_duration": total_completed_duration}
+
+@admin_router.post("/discount_codes", response_model=DiscountCode)
+def create_discount_code(
+    discount_code: DiscountCodeCreate,
+    db: Session = Depends(get_db),
+    admin_user: models.User = Depends(get_admin_user)
+):
+    existing = db.query(models.DiscountCode).filter(models.DiscountCode.code == discount_code.code.upper()).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Discount code already exists")
+    new_code = models.DiscountCode(
+        code=discount_code.code.upper(),
+        discount_percent=discount_code.discount_percent,
+        max_discount_amount=discount_code.max_discount_amount,
+        total_usage_limit=discount_code.total_usage_limit,
+        expiration_date=discount_code.expiration_date,
+        is_active=discount_code.is_active
+    )
+    db.add(new_code)
+    db.commit()
+    db.refresh(new_code)
+    return new_code
+
+@admin_router.get("/discount_codes", response_model=List[DiscountCode])
+def list_discount_codes(db: Session = Depends(get_db), admin_user: models.User = Depends(get_admin_user)):
+    return db.query(models.DiscountCode).all()
+
+@admin_router.put("/discount_codes/{code_id}", response_model=DiscountCode)
+def update_discount_code(
+    code_id: int,
+    update_data: DiscountCodeUpdate,
+    db: Session = Depends(get_db),
+    admin_user: models.User = Depends(get_admin_user)
+):
+    discount_code = db.query(models.DiscountCode).filter(models.DiscountCode.id == code_id).first()
+    if not discount_code:
+        raise HTTPException(status_code=404, detail="Discount code not found")
+    for key, value in update_data.dict(exclude_unset=True).items():
+        setattr(discount_code, key, value)
+    db.commit()
+    db.refresh(discount_code)
+    return discount_code
+
+@admin_router.delete("/discount_codes/{code_id}", status_code=204)
+def delete_discount_code(
+    code_id: int,
+    db: Session = Depends(get_db),
+    admin_user: models.User = Depends(get_admin_user)
+):
+    discount_code = db.query(models.DiscountCode).filter(models.DiscountCode.id == code_id).first()
+    if not discount_code:
+        raise HTTPException(status_code=404, detail="Discount code not found")
+    db.delete(discount_code)
+    db.commit()
+    return {"ok": True}

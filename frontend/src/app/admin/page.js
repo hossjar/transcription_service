@@ -1,4 +1,3 @@
-/* frontend/src/app/admin/page.js */
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -120,6 +119,20 @@ export default function AdminPanel() {
     return (
         <div className="p-4">
             <h1 className="text-2xl font-bold mb-4">Admin Panel</h1>
+            
+            {/* Admin Navigation Buttons */}
+            <div className="flex flex-wrap gap-3 mb-6">
+                <button
+                    onClick={() => router.push('/admin/discount_codes')}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded shadow-md transition-all duration-200 flex items-center"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                    </svg>
+                    Manage Discount Codes
+                </button>
+            </div>
+            
             {loading ? (
                 <p>Loading users...</p>
             ) : (

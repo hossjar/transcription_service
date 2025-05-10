@@ -105,5 +105,8 @@
   "copy_failed": "کپی کردن متن ناموفق بود.",
   "summary_failed": "تولید خلاصه ناموفق بود",
   "summary_error": "خطا در تولید خلاصه",
-  "selected_file": "فایل انتخاب شده"
+  "selected_file": "فایل انتخاب شده",
+  "discount_code": "کد تخفیف %",
+  "enter_discount_code": "کد تخفیف را وارد کنید",
+  "apply" : "اعمال"
     }

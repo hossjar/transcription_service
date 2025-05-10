@@ -105,5 +105,8 @@
   "copy_failed": "Failed to copy text.",
   "summary_failed": "Failed to generate summary",
   "summary_error": "Error generating summary",
-  "selected_file": "selected file"
+  "selected_file": "selected file",
+  "discount_code": "Discount Code %",
+  "enter_discount_code": "Enter discount code here",
+  "apply":"Apply"
     }
