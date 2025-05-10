@@ -1,4 +1,3 @@
-/* frontend/src/app/admin/discount_codes/page.js */
 'use client';
 
 import { useState, useEffect, useContext } from 'react';
@@ -76,7 +75,7 @@ export default function DiscountCodes() {
                 discount_percent: code.discount_percent,
                 max_discount_amount: code.max_discount_amount,
                 total_usage_limit: code.total_usage_limit,
-                expiration_date: code.expiration_date.split('T')[0], // Format for input type="date"
+                expiration_date: code.expiration_date.split('T')[0],
                 is_active: code.is_active,
             });
         } else {
@@ -170,49 +169,52 @@ export default function DiscountCodes() {
             >
                 {t('create_new_code')}
             </button>
-            <table className="table-auto w-full mb-4">
-                <thead>
-                    <tr className="bg-gray-200">
-                        <th className="px-4 py-2">{t('code')}</th>
-                        <th className="px-4 py-2">{t('discount_percent')}</th>
-                        <th className="px-4 py-2">{t('max_discount_amount')}</th>
-                        <th className="px-4 py-2">{t('total_usage_limit')}</th>
-                        <th className="px-4 py-2">{t('expiration_date')}</th>
-                        <th className="px-4 py-2">{t('is_active')}</th>
-                        <th className="px-4 py-2">{t('actions')}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {discountCodes.map((code) => (
-                        <tr key={code.id} className="border-b">
-                            <td className="px-4 py-2">{code.code}</td>
-                            <td className="px-4 py-2">{code.discount_percent}%</td>
-                            <td className="px-4 py-2">{code.max_discount_amount} {t('toman')}</td>
-                            <td className="px-4 py-2">{code.total_usage_limit}</td>
-                            <td className="px-4 py-2">{new Date(code.expiration_date).toLocaleDateString()}</td>
-                            <td className="px-4 py-2">{code.is_active ? t('yes') : t('no')}</td>
-                            <td className="px-4 py-2">
-                                <button
-                                    onClick={() => openModal(code)}
-                                    className="bg-yellow-500 text-white px-2 py-1 rounded mr-2"
-                                >
-                                    {t('edit')}
-                                </button>
-                                <button
-                                    onClick={() => deleteDiscountCode(code.id)}
-                                    className="bg-red-500 text-white px-2 py-1 rounded"
-                                >
-                                    {t('delete')}
-                                </button>
-                            </td>
+            <div className="overflow-x-auto">
+                <table className="table-auto w-full mb-4">
+                    <thead>
+                        <tr className="bg-gray-200">
+                            <th className="px-4 py-2">{t('code')}</th>
+                            <th className="px-4 py-2">{t('discount_percent')}</th>
+                            <th className="px-4 py-2">{t('max_discount_amount')}</th>
+                            <th className="px-4 py-2">{t('total_usage_limit')}</th>
+                            <th className="px-4 py-2">{t('times_used')}</th>
+                            <th className="px-4 py-2">{t('expiration_date')}</th>
+                            <th className="px-4 py-2">{t('is_active')}</th>
+                            <th className="px-4 py-2">{t('actions')}</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
-
+                    </thead>
+                    <tbody>
+                        {discountCodes.map((code) => (
+                            <tr key={code.id} className="border-b">
+                                <td className="px-4 py-2">{code.code}</td>
+                                <td className="px-4 py-2">{code.discount_percent}%</td>
+                                <td className="px-4 py-2">{code.max_discount_amount} {t('toman')}</td>
+                                <td className="px-4 py-2">{code.total_usage_limit}</td>
+                                <td className="px-4 py-2">{code.times_used}</td>
+                                <td className="px-4 py-2">{new Date(code.expiration_date).toLocaleDateString()}</td>
+                                <td className="px-4 py-2">{code.is_active ? t('yes') : t('no')}</td>
+                                <td className="px-4 py-2">
+                                    <button
+                                        onClick={() => openModal(code)}
+                                        className="bg-yellow-500 text-white px-2 py-1 rounded mr-2"
+                                    >
+                                        {t('edit')}
+                                    </button>
+                                    <button
+                                        onClick={() => deleteDiscountCode(code.id)}
+                                        className="bg-red-500 text-white px-2 py-1 rounded"
+                                    >
+                                        {t('delete')}
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
             {isModalOpen && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
-                    <div className="bg-white p-6 rounded shadow-lg w-1/2">
+                    <div className="bg-white p-6 rounded shadow-lg w-full md:w-1/2">
                         <h2 className="text-xl font-bold mb-4">
                             {currentCode ? t('edit_code') : t('create_new_code')}
                         </h2>
