@@ -108,5 +108,10 @@
   "selected_file": "فایل انتخاب شده",
   "discount_code": "کد تخفیف %",
   "enter_discount_code": "کد تخفیف را وارد کنید",
-  "apply" : "اعمال"
+  "apply" : "اعمال",
+  "original_price":"قیمت اولیه",
+  "total_amount":"مبلغ نهایی",
+  "discount": "تخفیف",
+  "subtotal": "با تخفیف",
+  "vat": "ارزش افزوده"  
     }
