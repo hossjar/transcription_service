@@ -108,5 +108,10 @@
   "selected_file": "selected file",
   "discount_code": "Discount Code %",
   "enter_discount_code": "Enter discount code here",
-  "apply":"Apply"
+  "apply":"Apply",
+  "original_price":"Original Price",
+  "total_amount":"Total Amount",
+  "discount": "Discount",
+  "subtotal": "Subtotal",
+  "vat": "VAT"  
     }
