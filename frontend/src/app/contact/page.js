@@ -25,7 +25,7 @@ export default function Contact() {
             links: [
                 'tel:+989335622283',
                 'https://wa.me/989335622293',
-                'https://t.me/tootty_com',
+                'https://t.me/captioni_ir',
             ],
             ariaLabels: ['Phone', 'WhatsApp', 'Telegram'],
         },

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import os
 import uuid
 from sqlalchemy import text
-from fastapi import FastAPI, Request, Depends, HTTPException, status, UploadFile, File, Form, Query, APIRouter
+from fastapi import FastAPI, Request, Depends, HTTPException, status, UploadFile, File, Form, Query, APIRouter, Header
 import requests
 from fastapi.responses import RedirectResponse, JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 import models
 from starlette.middleware.sessions import SessionMiddleware
 import time
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from database import engine, get_db
 from models import User, UploadedFile, UserActivity
 import tasks
@@ -26,6 +26,8 @@ import redis
 from openai import OpenAI
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from urllib.parse import urlparse
+from typing import Optional
 
 SESSION_COOKIE_SAMESITE = os.getenv('SESSION_COOKIE_SAMESITE', 'lax')
 SESSION_COOKIE_HTTPS_ONLY = os.getenv('SESSION_COOKIE_HTTPS_ONLY', 'false').lower() == 'true'
@@ -34,11 +36,9 @@ SESSION_COOKIE_HTTPS_ONLY = os.getenv('SESSION_COOKIE_HTTPS_ONLY', 'false').lowe
 app = FastAPI()
 app.include_router(admin_router)
 app.include_router(payment_router)
-# Create a router for development routes
 dev_router = APIRouter()
 app.include_router(dev_router)
 
-# Session Middleware
 app.add_middleware(
     SessionMiddleware,
     secret_key=os.getenv('SECRET_KEY'),
@@ -48,15 +48,14 @@ app.add_middleware(
     max_age=90000,
 )
 
-# CORS middleware updated for new domain
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1",
         "http://frontend",
-        "https://tootty.com",
-        "https://www.tootty.com",
+        "https://captioni.ir",
+        "https://www.captioni.ir",
         "http://test.tootty.com:81"
     ],
     allow_credentials=True,
@@ -108,18 +107,13 @@ class GoogleAuthToken(BaseModel):
 if os.getenv('APP_ENV') == 'development':
     @app.post("/auth/dev-login")
     async def dev_login(request: Request, email: str = Form(...), db: Session = Depends(get_db)):
-        """
-        Development-only endpoint to log in a user by email without OAuth.
-        """
         user = db.query(User).filter(User.email == email).first()
         if not user:
             logger.error(f"Dev login failed: User with email {email} not found")
             raise HTTPException(status_code=404, detail="User not found")
         
-        # Set user session
         request.session['user_id'] = user.id
         
-        # Log the activity
         activity = UserActivity(
             user_id=user.id,
             activity_type='login',
@@ -134,7 +128,6 @@ if os.getenv('APP_ENV') == 'development':
         
 @app.post("/auth/google")
 async def auth_google(token: GoogleAuthToken, request: Request, db: Session = Depends(get_db)):
-    """Authenticate user via Google ID token."""
     try:
         id_token_str = token.id_token
         next_url = token.next_url or '/dashboard'
@@ -184,11 +177,8 @@ async def auth_google(token: GoogleAuthToken, request: Request, db: Session = De
 
 @app.post("/logout")
 async def logout(request: Request, db: Session = Depends(get_db)):
-    """Log out the user and clear session."""
     user_id = request.session.get('user_id')
     if user_id:
-    #    user = db.query(User).filter(User.id == user_id).first()
-    #    logger.info(f"User logging out: {user.email if user else 'unknown'}")
         activity = UserActivity(user_id=user_id, activity_type='logout', details='User logged out')
         db.add(activity)
         db.commit()
@@ -205,17 +195,15 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 @app.get("/health")
 async def health_check():
-    # Basic check: just confirm the app is responding
     return {"status": "ok"}
 
 
 @app.get("/me")
 async def read_me(request: Request, db: Session = Depends(get_db)):
-    """Return current user info."""
     user = get_current_user(request, db)
     if not user:
         return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": "Not authenticated"})
-    current_time = datetime.utcnow()  # Use naive datetime in UTC
+    current_time = datetime.utcnow()
     if user.expiration_date and current_time > user.expiration_date:
         user.remaining_time = 0
         db.commit()
@@ -231,10 +219,9 @@ async def read_me(request: Request, db: Session = Depends(get_db)):
 
 @app.get("/")
 async def read_root():
-    return {"message": "Welcome to Tootty Backend!"}
+    return {"message": "Welcome to Captioni Backend!"}
 
 async def save_upload_file(upload_file: UploadFile, content: bytes) -> str:
-    """Save uploaded file and return path."""
     import aiofiles
     file_extension = upload_file.filename.split(".")[-1].lower()
     file_name = f"{uuid.uuid4()}.{file_extension}"
@@ -258,7 +245,6 @@ async def upload_file(
     diarize: bool = Form(False),
     db: Session = Depends(get_db)
 ):
-    """Handle file upload and initiate transcription."""
     try:
         user = get_current_user(request, db)
         if not user:
@@ -269,7 +255,7 @@ async def upload_file(
             logger.error(f"Unsupported file type by user {user.email}: {file.filename}")
             raise HTTPException(status_code=400, detail="Unsupported file type")
         is_video = file_extension in ALLOWED_VIDEO_EXTENSIONS
-        MAX_FILE_SIZE = 250 * 1024 * 1024  # 250MB
+        MAX_FILE_SIZE = 250 * 1024 * 1024
         content = await file.read()
         if len(content) > MAX_FILE_SIZE:
             logger.error(f"File too large by user {user.email}: {file.filename}")
@@ -309,9 +295,8 @@ async def upload_file(
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 def generate_summary(text):
-    """Generate a summary using OpenAI GPT-4."""
     response = client.chat.completions.create(
-        model="gpt-4.1",
+        model="gpt-5-mini",
         messages=[
             {
                 "role": "system",
@@ -322,8 +307,8 @@ def generate_summary(text):
                 "content": f"input Text:\n\"\"\"\n{text}\n\"\"\""
             }
         ],
-        max_tokens=350,
-        temperature=0.2,
+    max_completion_tokens=350,
+
     )
     return response.choices[0].message.content.strip()
 
@@ -333,7 +318,6 @@ async def summarize_file(file_id: int,
                          request: Request,
                          db: Session = Depends(get_db),
                          current_user=Depends(get_current_user)):
-    """Generate and store a summary for a transcribed file."""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     file = db.query(UploadedFile).filter(UploadedFile.id == file_id, UploadedFile.user_id == current_user.id).first()
@@ -352,12 +336,9 @@ async def summarize_file(file_id: int,
     except Exception as e:
         logger.error(f"Error generating summary for file_id={file_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate summary")
-
-
     
-@app.get("/files")  # Updated existing endpoint
+@app.get("/files")
 async def get_user_files(request: Request, db: Session = Depends(get_db), limit: int = Query(10, ge=1, le=100), offset: int = Query(0, ge=0)):
-    """List user's uploaded files including summaries."""
     user = get_current_user(request, db)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -368,25 +349,16 @@ async def get_user_files(request: Request, db: Session = Depends(get_db), limit:
         "total": total,
         "files": [
             {
-                "id": f.id,
-                "user_id": f.user_id,
-                "filename": f.filename,
-                "filepath": f.filepath,
-                "upload_time": f.upload_time.isoformat(),
-                "status": f.status,
-                "transcription": f.transcription,
-                "transcription_job_id": f.transcription_job_id,
-                "output_format": f.output_format,
-                "language": f.language,
-                "media_duration": f.media_duration,
-                "summary": f.summary  # Include summary in response
+                "id": f.id, "user_id": f.user_id, "filename": f.filename, "filepath": f.filepath,
+                "upload_time": f.upload_time.isoformat(), "status": f.status, "transcription": f.transcription,
+                "transcription_job_id": f.transcription_job_id, "output_format": f.output_format,
+                "language": f.language, "media_duration": f.media_duration, "summary": f.summary
             } for f in files
         ]
     }
 
 @app.delete("/files/{file_id}")
 async def delete_file(file_id: int, request: Request, db: Session = Depends(get_db)):
-    """Delete a user's file."""
     user = get_current_user(request, db)
     if not user:
         logger.warning("Unauthorized file deletion attempt.")
@@ -404,7 +376,6 @@ async def delete_file(file_id: int, request: Request, db: Session = Depends(get_
 
 @app.get("/api/sse")
 async def sse_endpoint(request: Request, db: Session = Depends(get_db)):
-    """Stream real-time updates via SSE."""
     user = get_current_user(request, db)
     if not user:
         return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
@@ -419,17 +390,13 @@ async def sse_endpoint(request: Request, db: Session = Depends(get_db)):
         
         try:
             while True:
-                # check if the client is disconnected
                 if await request.is_disconnected():
-                    # Remove or downgrade this log to avoid duplication
                     break
-                # listen for redis messages
                 message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
                 if message and message['type'] == 'message':
                     data = message['data'].decode('utf-8')
                     yield f"data: {data}\n\n"
                 
-                # Send keep-alive every 3 second
                 if time.time() - last_keepalive >= 15:
                     yield ": keepalive\n\n"
                     last_keepalive = time.time()
@@ -437,7 +404,7 @@ async def sse_endpoint(request: Request, db: Session = Depends(get_db)):
         except Exception as e:
             logger.error(f"SSE error for user {user.email}: {str(e)}")
         finally:
-            logger.debug(f"SSE connection closed for user {user.email}")  # Changed to DEBUG
+            logger.debug(f"SSE connection closed for user {user.email}")
             await pubsub.unsubscribe(user_channel)
             await redis_conn.close()
     
@@ -446,10 +413,123 @@ async def sse_endpoint(request: Request, db: Session = Depends(get_db)):
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
     )
-        
+
+SERVICE_USER_EMAIL = "transcription_service@tootty.com"
+
+# MODIFIED: Added destination_language
+class TranscriptionRequest(BaseModel):
+    audio_url: str
+    callback_url: str
+    upload_token: str
+    language: str
+    destination_language: Optional[str] = None
+
+@app.post("/api/transcribe")
+async def transcribe(
+    request: TranscriptionRequest,
+    api_key: str = Header(None, alias="X-API-Key"),
+    download_api_key: str = Header(None, alias="X-Download-API-Key"),
+    db: Session = Depends(get_db)
+):
+    if api_key != os.getenv("TRANSCRIPTION_API_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid API key")
+
+    service_user = db.query(User).filter(User.email == SERVICE_USER_EMAIL).first()
+    if not service_user:
+        service_user = User(
+            email=SERVICE_USER_EMAIL, name="Transcription Service",
+            google_id="service_" + str(uuid.uuid4()), remaining_time=999999
+        )
+        db.add(service_user)
+        db.commit()
+        db.refresh(service_user)
+
+    try:
+        logger.info(f"Downloading audio from URL: {request.audio_url}")
+        headers = {"X-Download-API-Key": download_api_key}
+        with requests.get(request.audio_url, headers=headers, stream=True, timeout=300) as r:
+            r.raise_for_status()
+            
+            original_filename = "downloaded_audio.mp3"
+            parsed_url = urlparse(request.audio_url)
+
+            if parsed_url.path:
+                basename = os.path.basename(parsed_url.path)
+                if basename:
+                     original_filename = basename
+
+            filename = f"{request.upload_token}.mp3"
+            file_location = os.path.join(UPLOAD_DIRECTORY, filename)
+            
+            with open(file_location, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+        logger.info(f"Successfully downloaded audio to {file_location}")
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to download audio from {request.audio_url}: {e}")
+        raise HTTPException(status_code=400, detail=f"Could not download audio file from provided URL. Error: {e}")
+    except IOError as e:
+        logger.error(f"Failed to write downloaded file to disk: {e}")
+        raise HTTPException(status_code=500, detail=f"Could not save downloaded audio file. Error: {e}")
+
+    # MODIFIED: Save destination_language
+    uploaded_file = UploadedFile(
+        user_id=service_user.id,
+        filename=original_filename,
+        filepath=file_location,
+        upload_time=datetime.now(timezone.utc),
+        status='pending',
+        output_format='json',
+        language=request.language,
+        destination_language=request.destination_language, # ADDED
+        callback_url=request.callback_url,
+        external_upload_token=request.upload_token,
+        is_video=False
+    )
+    db.add(uploaded_file)
+    db.commit()
+    db.refresh(uploaded_file)
+
+    tasks.transcribe_file.delay(uploaded_file.id, 'json', request.language, False, True)
+    return {"file_id": uploaded_file.id}
+
+@app.post("/api/cleanup-file/{upload_token}")
+async def cleanup_file(
+    upload_token: str,
+    api_key: str = Header(None, alias="X-API-Key"),
+    db: Session = Depends(get_db)
+):
+    """Secure endpoint to delete a specific audio file after processing is complete."""
+    if api_key != os.getenv("TRANSCRIPTION_API_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid API key")
+
+    file_record = db.query(UploadedFile).filter(UploadedFile.external_upload_token == upload_token).first()
+    
+    if not file_record:
+        # It's possible the file was already deleted or never existed.
+        # Return a success response to avoid unnecessary retries from the caller.
+        logger.warning(f"Cleanup requested for non-existent token: {upload_token}")
+        return {"detail": "File not found, but request acknowledged."}
+
+    file_path_to_delete = file_record.filepath
+    
+    if file_path_to_delete and os.path.exists(file_path_to_delete):
+        try:
+            os.remove(file_path_to_delete)
+            logger.info(f"Successfully deleted file by remote request: {file_path_to_delete}")
+            # Optionally, remove the record from the database as well
+            # db.delete(file_record)
+            # db.commit()
+            return {"detail": f"File {os.path.basename(file_path_to_delete)} deleted successfully."}
+        except OSError as e:
+            logger.error(f"Error deleting file {file_path_to_delete}: {e}")
+            raise HTTPException(status_code=500, detail="Failed to delete file.")
+    else:
+        logger.warning(f"Cleanup requested, but file not found on disk: {file_path_to_delete}")
+        return {"detail": "File not found on disk, but request acknowledged."}
+
 @app.get("/login/google")
 async def google_login():
-    """Redirect to Google OAuth2 login."""
     client_id = os.getenv('GOOGLE_CLIENT_ID')
     redirect_uri = f"{os.getenv('BASE_URL')}/auth/google/callback"
     scope = "openid email profile"
@@ -458,7 +538,6 @@ async def google_login():
 
 @app.get("/auth/google/callback")
 async def google_callback(request: Request, code: str = Query(None), db: Session = Depends(get_db)):
-    """Handle Google OAuth callback."""
     if not code:
         return RedirectResponse(url="/")
     client_id = os.getenv('GOOGLE_CLIENT_ID')

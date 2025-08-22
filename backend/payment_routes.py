@@ -1,5 +1,7 @@
 # backend/payment_routes.py
 
+# backend/payment_routes.py
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -26,7 +28,7 @@ else:
     ZARINPAL_VERIFY_URL = "https://api.zarinpal.com/pg/v4/payment/verify.json"
     ZARINPAL_START_PAY_URL = "https://www.zarinpal.com/pg/StartPay/{authority}"
 
-CALLBACK_URL = os.getenv('CALLBACK_URL', 'https://tootty.com/api/payment/verify')
+CALLBACK_URL = os.getenv('CALLBACK_URL', 'https://captioni.ir/api/payment/verify')
 
 def calculate_price(hours: float) -> float:
     """Calculate price based on hours purchased."""

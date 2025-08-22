@@ -17,7 +17,7 @@ export default function Navbar() {
 
     // Helper function to check and update user state from localStorage
     const checkLocalStorage = () => {
-        const cachedUser = localStorage.getItem('tutty_user');
+        const cachedUser = localStorage.getItem('captioni_user');
         if (cachedUser) {
         try {
             const parsed = JSON.parse(cachedUser);
@@ -59,15 +59,15 @@ export default function Navbar() {
             const data = await res.json();
             setUser(data);
             // Keep localStorage in sync with server data
-            localStorage.setItem('tutty_user', JSON.stringify(data));
+            localStorage.setItem('captioni_user', JSON.stringify(data));
         } else {
             setUser(null);
-            localStorage.removeItem('tutty_user');
+            localStorage.removeItem('captioni_user');
         }
         } catch (err) {
         console.error('Error fetching user:', err);
         setUser(null);
-        localStorage.removeItem('tutty_user');
+        localStorage.removeItem('captioni_user');
         }
     }
 
@@ -80,7 +80,7 @@ export default function Navbar() {
         });
         if (res.ok) {
             setUser(null);
-            localStorage.removeItem('tutty_user');
+            localStorage.removeItem('captioni_user');
             window.location.href = '/';
         } else {
             console.error('Logout failed:', res.statusText);
@@ -125,12 +125,12 @@ export default function Navbar() {
             <Link href="/" className="flex items-center text-xl font-bold text-foreground">
             <Image
                 src="/images/logo.png"
-                alt="Tutty Logo"
+                alt="Captioni.ir Logo"
                 width={36}
                 height={36}
                 className="mr-2"
             />
-            <span className="text-primary">Tootty</span>
+            <span className="text-primary">Captioni.ir</span>
             </Link>
 
             {/* Desktop Menu */}

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://tootty.com/sitemap.xml
+Sitemap: https://captioni.ir/sitemap.xml

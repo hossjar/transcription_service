@@ -10,6 +10,12 @@ services:
       POSTGRES_DB: tuttydb
     volumes:
       - ../tootty_data/db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tuttyuser -d tuttydb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   nginx:
     image: nginx:latest
     depends_on:
@@ -34,10 +40,12 @@ services:
     volumes:
       - ./backend:/app
       - ../tootty_data/uploads_data:/app/uploads
-      
+
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     env_file:
       - ./backend/.env
     dns:

@@ -13,6 +13,7 @@ from elevenlabs.client import ElevenLabs
 from io import BytesIO
 from sqlalchemy import update, func  # Added for atomic updates
 from httpx import Timeout
+import requests
 
 redis_client = redis.Redis(host='redis', port=6379, db=0)
 
@@ -133,10 +134,10 @@ def convert_transcription_to_format(transcription, output_format):
 @celery_app.task(
     bind=True,
     default_retry_delay=60,
-    max_retries=3,  # Reduced from 8 to limit retries
+    max_retries=3,
     retry_backoff=True,
     retry_jitter=True,
-    task_time_limit=7200  # 2 hours max runtime
+    task_time_limit=7200
 )
 def transcribe_file(self, file_id: int, output_format: str, language: str, tag_audio_events: bool, diarize: bool):
     """Transcribe file using ElevenLabs scribe_v1 model."""
@@ -153,7 +154,6 @@ def transcribe_file(self, file_id: int, output_format: str, language: str, tag_a
         user_email = user.email if user else "unknown"
         redis_channel = f"user_{user_id}_updates"
 
-        # Idempotency Check: Skip if already transcribed
         if uploaded_file.status == 'transcribed':
             logger.info(f"[transcribe_file] File already transcribed. file_id={file_id}, user_id={user_id}, user_email={user_email}")
             redis_client.publish(redis_channel, json.dumps({"file_id": file_id, "status": "transcribed", "message": "Transcription already completed."}))
@@ -206,13 +206,11 @@ def transcribe_file(self, file_id: int, output_format: str, language: str, tag_a
                 redis_client.publish(redis_channel, json.dumps({"file_id": file_id, "status": "error", "message": "Failed to extract audio from video file."}))
                 return
 
-        # Dynamic Timeout: Base timeout + 2x media duration (in seconds)
         media_duration = uploaded_file.media_duration or get_media_duration(uploaded_file.filepath)
-        timeout_seconds = max(180, media_duration / 20)  # Minimum 5 minutes, or 2x duration
+        timeout_seconds = max(180, media_duration / 20)
         client = ElevenLabs(api_key=api_key, timeout=Timeout(timeout=timeout_seconds, connect=10.0))
         logger.info(f"[transcribe_file] Set timeout to {timeout_seconds} seconds for file_id={file_id}")
 
-        # Map language to ElevenLabs codes
         ELEVENLABS_LANGUAGE_MAP = {'fa': 'fas', 'en': 'eng', 'ar': 'ara', 'tr': 'tur', 'fr': 'fra'}
         mapped_language = ELEVENLABS_LANGUAGE_MAP.get(language, language)
 
@@ -236,7 +234,10 @@ def transcribe_file(self, file_id: int, output_format: str, language: str, tag_a
             db.execute(
                 update(models.User)
                 .where(models.User.id == user_id)
-                .values(remaining_time=func.greatest(models.User.remaining_time - deduction, 0))
+                .values(
+                    remaining_time=func.greatest(models.User.remaining_time - deduction, 0),
+                    total_used_time=models.User.total_used_time + deduction
+                )
             )
             db.commit()
 

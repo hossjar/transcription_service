@@ -34,11 +34,6 @@ def list_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), a
             models.UploadedFile.user_id == user.id,
             models.UploadedFile.status.in_(['error', 'failed'])
         ).count()
-        total_duration_seconds = db.query(func.sum(models.UploadedFile.media_duration)).filter(
-            models.UploadedFile.user_id == user.id,
-            models.UploadedFile.status == 'transcribed'
-        ).scalar() or 0
-        total_duration_minutes = total_duration_seconds / 60.0
         last_login_activity = db.query(models.UserActivity).filter(
             models.UserActivity.user_id == user.id,
             models.UserActivity.activity_type == 'login'
@@ -54,7 +49,7 @@ def list_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), a
             expiration_date=user.expiration_date,
             successful_jobs=successful_jobs,
             failed_jobs=unsuccessful_jobs,
-            total_used_time=total_duration_minutes,
+            total_used_time=user.total_used_time,
             last_login=last_login
         )
         user_list.append(user_schema)
