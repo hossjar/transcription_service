@@ -1,33 +1,32 @@
 # frontend/Dockerfile
 
-FROM node:18
+FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files first to leverage Docker caching
-COPY package*.json ./
+# Install dependencies needed for some node modules
+RUN apk add --no-cache libc6-compat
 
-# Install dependencies
+COPY package*.json ./
 RUN npm install
 
-# Environment variables for build-time and runtime
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
-
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Copy the application code
 COPY . .
 
-# Build the application for production
 RUN npm run build
 
-# Document that the container uses port 3000
+# [STABILITY] Fix permissions so the secure user can manage the cache
+RUN chown -R node:node /app
+
+# [SECURITY] Switch to the secure 'node' user
+USER node
+
 EXPOSE 3000
 
-# Use production start command
 CMD ["npm", "start"]
-
-# Use development 
-#CMD ["npm", "run", "dev"]

@@ -9,7 +9,8 @@ services:
       POSTGRES_PASSWORD: tuttypassword
       POSTGRES_DB: tuttydb
     volumes:
-      - ../tootty_data/db_data:/var/lib/postgresql/data
+      # [DATA] Pointing to your existing database
+      - ../captioni_data/db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U tuttyuser -d tuttydb"]
       interval: 5s
@@ -34,13 +35,16 @@ services:
   backend:
     build:
       context: ./backend
+      dockerfile: Dockerfile
     environment:
       TZ: Asia/Tehran
     restart: unless-stopped
     volumes:
-      - ./backend:/app
-      - ../tootty_data/uploads_data:/app/uploads
-
+      # [SECURITY] Mount code as Read-Only (:ro)
+      - ./backend:/app:ro
+      # [DATA] Mount your ACTUAL data folders as Writable
+      - ../captioni_data/uploads_data:/app/uploads
+      - ../captioni_data/logs:/app/logs
     depends_on:
       db:
         condition: service_healthy
@@ -51,7 +55,6 @@ services:
     dns:
       - 8.8.8.8
       - 8.8.4.4
-
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 60s
@@ -61,12 +64,16 @@ services:
   celery_worker:
     build:
       context: ./backend
+      dockerfile: Dockerfile
     environment:
       TZ: Asia/Tehran
     command: celery -A celery_config worker -l info --concurrency=5
     volumes:
-      - ./backend:/app
-      - ../tootty_data/uploads_data:/app/uploads
+      # [SECURITY] Code is Read-Only
+      - ./backend:/app:ro
+      # [DATA] Data is Writable
+      - ../captioni_data/uploads_data:/app/uploads
+      - ../captioni_data/logs:/app/logs
     depends_on:
       - backend
       - redis
@@ -84,9 +91,10 @@ services:
       TZ: Asia/Tehran
       NEXT_PUBLIC_API_URL: /api
       NEXT_PUBLIC_GOOGLE_CLIENT_ID: 201837583381-o18ot139ujp2rscl6a0pgo6l4uik5jnc.apps.googleusercontent.com
-      WATCHPACK_POLLING: "true"
     volumes:
-      - ./frontend:/app
+      # [SECURITY] Mount source as Read-Only
+      - ./frontend:/app:ro
+      # [FUNCTIONALITY] Allow app to manage its own cache internally
       - /app/node_modules
       - /app/.next
     depends_on:
